@@ -33,12 +33,17 @@ protected in code, not here, so no file can disable them.
 }
 ```
 
-- **match:** system properties that must all be equal. Respiro picks the model with the most matching properties.
+- **match:** system properties that must all be equal, always including `ro.product.device`. Respiro picks the model
+  with the most matching properties; no two models may have the same match.
 - **disable:** safe to switch off on this model; Respiro does it without asking.
-- **ask:** things people use; Respiro asks first and disables only what the user doesn't tick.
+- **ask:** things people use; Respiro asks first and disables only what the user doesn't tick. If one layer disables
+  a package and another asks about it, Respiro asks.
 - **keep:** must stay on, with the reason. Respiro never disables these, even if a layer lists them under disable.
 - **never_start:** packages Respiro must not open, not even to inspect them (factory menus).
 - **tested:** every model is tested on a real TV, including a reboot. Say what wasn't tested.
+
+Every package must be a plain package name (letters, digits, `_`, dots); ids are unique, and a model's id never
+starts with `common/` or `vendors/`.
 
 Never store anything that identifies one person's TV: serial numbers, MAC addresses, Wi-Fi names, IP addresses.
 

@@ -12,9 +12,13 @@ import java.io.File
 object SelfAdb {
     private const val HOST = "localhost"
     private const val PORT = 5555
+    private const val CONNECT_TIMEOUT_MS = 5_000
+
+    /** Long enough to read and accept "Allow debugging?"; past it the app shows what to do instead of hanging. */
+    private const val SOCKET_TIMEOUT_MS = 30_000
 
     fun shell(context: Context, command: String): String =
-        Dadb.create(HOST, PORT, keyPair(context)).use { adb -> adb.shell(command).allOutput.trim() }
+        Dadb.create(HOST, PORT, keyPair(context), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS).use { adb -> adb.shell(command).allOutput.trim() }
 
     /** Respiro's own ADB key, made on first use and kept in the app's private files. */
     private fun keyPair(context: Context): AdbKeyPair {

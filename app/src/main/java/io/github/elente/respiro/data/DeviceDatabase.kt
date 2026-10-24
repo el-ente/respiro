@@ -15,6 +15,11 @@ data class DebloatPlan(
 class DeviceDatabase(files: List<DeviceFile>) {
     private val byId: Map<String, DeviceFile> = files.associateBy { it.id }
 
+    init {
+        val repeated = files.groupBy { it.id }.filterValues { it.size > 1 }.keys
+        require(repeated.isEmpty()) { "Device files share an id: $repeated" }
+    }
+
     val files: Collection<DeviceFile> get() = byId.values
 
     /** The tested model whose every match property equals the TV's; the most specific wins. Null for an unknown TV. */
@@ -27,10 +32,13 @@ class DeviceDatabase(files: List<DeviceFile>) {
         val layers = model?.let(::layersOf) ?: listOfNotNull(byId[COMMON_LAYER])
         val keep = layers.flatMap { layer -> layer.keep.map { it.pkg } }.toSet()
         val allowed = { pkg: String -> pkg !in keep && !ProtectedPackages.isProtected(pkg) }
+        val ask = layers.flatMap { it.ask }.distinctBy { it.pkg }.filter { allowed(it.pkg) }
+        val askFirst = ask.map { it.pkg }.toSet()
         return DebloatPlan(
             model = model,
-            disable = layers.flatMap { it.disable }.distinctBy { it.pkg }.filter { allowed(it.pkg) },
-            ask = layers.flatMap { it.ask }.distinctBy { it.pkg }.filter { allowed(it.pkg) },
+            // A package one layer disables and another asks about is asked about: never switch off what someone may use.
+            disable = layers.flatMap { it.disable }.distinctBy { it.pkg }.filter { allowed(it.pkg) && it.pkg !in askFirst },
+            ask = ask,
             keep = keep,
             neverStart = layers.flatMap { it.neverStart }.toSet(),
         )

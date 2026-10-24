@@ -22,8 +22,15 @@ object ProtectedPackages {
 
     private const val OVERLAY_MODULES = "com.google.android.overlay.modules"
 
+    private val packageName = Regex("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+$")
+
+    /** A real package name: dotted segments of letters, digits and underscores, nothing a shell could read as more. */
+    fun isValidName(pkg: String): Boolean = packageName.matches(pkg)
+
+    /** Core packages, and anything that isn't a clean package name, since it ends up in a shell command. */
     fun isProtected(pkg: String): Boolean =
-        pkg in exact ||
+        !isValidName(pkg) ||
+            pkg in exact ||
             pkg.startsWith(OVERLAY_MODULES) ||
             (pkg.startsWith(PROVIDERS) && pkg !in optionalProviders) ||
             coreModules.any { pkg == "com.android.$it" || pkg == "com.google.android.$it" }

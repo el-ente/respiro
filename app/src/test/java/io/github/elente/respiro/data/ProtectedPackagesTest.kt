@@ -19,6 +19,12 @@ class ProtectedPackagesTest {
     }
 
     @Test
+    fun `anything that isn't a clean package name is protected`() {
+        listOf("com.android.systemui ", "com.android.systemui;reboot", "", "nodots", "com.tcl.dashboard\nreboot")
+            .forEach { assertTrue("'$it'", ProtectedPackages.isProtected(it)) }
+    }
+
+    @Test
     fun `optional providers and ordinary apps are not`() {
         listOf(
             "com.android.providers.calendar",
