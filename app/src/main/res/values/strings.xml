@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Respiro</string>
+    <string name="connecting">Connecting to this TV… If Android asks to allow debugging, choose Always allow.</string>
+    <string name="failed_title">Respiro can\'t reach this TV\'s debugging</string>
+    <string name="failed_help">Turn on Developer options › USB debugging (and Network debugging if your TV has it), then open Respiro again. If it still fails, restart the TV.</string>
+    <string name="known_tv">This is a %1$s</string>
+    <string name="unknown_tv">Respiro doesn\'t know this TV yet (%1$s %2$s)</string>
+    <string name="unknown_tv_help">Only what\'s safe on any Android TV will be switched off.</string>
+    <plurals name="to_disable">
+        <item quantity="one">%1$d thing to switch off</item>
+        <item quantity="other">%1$d things to switch off</item>
+    </plurals>
+    <plurals name="to_ask">
+        <item quantity="one">%1$d app to ask you about</item>
+        <item quantity="other">%1$d apps to ask you about</item>
+    </plurals>
+    <string name="group_telemetry">Tracking</string>
+    <string name="group_ads">Ads and promos</string>
+    <string name="group_services">Background services</string>
+    <string name="group_preloaded">Preinstalled apps</string>
+</resources>

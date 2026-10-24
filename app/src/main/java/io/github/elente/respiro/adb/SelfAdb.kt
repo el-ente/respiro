@@ -1,4 +1,4 @@
-package io.github.elente.respiro
+package io.github.elente.respiro.adb
 
 import android.content.Context
 import dadb.AdbKeyPair
