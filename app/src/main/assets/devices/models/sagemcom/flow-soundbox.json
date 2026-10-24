@@ -1,0 +1,47 @@
+{
+  "id": "sagemcom/flow-soundbox",
+  "name": "Flow SoundBox (Telecom Argentina)",
+  "match": {
+    "ro.product.manufacturer": "Sagemcom",
+    "ro.product.model": "FlowSoundBox",
+    "ro.product.device": "m393gena_teco"
+  },
+  "firmware": { "android": "11", "sdk": 30, "build": "RTT4.220918.001.11.0.0.10" },
+  "extends": ["common/google-tv", "vendors/sagemcom"],
+  "disable": [
+    { "package": "android.autoinstalls.config.sagemcom.device", "group": "services", "reason": "Operator auto-installs of Play apps" }
+  ],
+  "ask": [
+    { "package": "com.omni.otademo", "category": "updates", "label": "Telecom/Sagemcom firmware updates" }
+  ],
+  "keep": [
+    { "package": "com.sagemcom.teco_aidl_flow", "reason": "Telecom's device lock (DeviceAdminReceiverLock); the box is the operator's" },
+    { "package": "com.sagemcom.teco.partnerinterface", "reason": "Bluetooth remote pairing, language picker, and the remote's app buttons (GlobalKeyReceiver)" },
+    { "package": "com.omni.sci", "reason": "Telecom service (SCI 4.3.5-Telecom); purpose unclear, kept until known" },
+    { "package": "com.sagemcom.stb.a2dpsinkplayer", "reason": "Bluetooth audio into the soundbar" },
+    { "package": "com.sagemcom.stb.micswitchprovider", "reason": "Remote microphone switch" },
+    { "package": "com.sagemcom.stb.led", "reason": "Front LED" },
+    { "package": "com.sagemcom.providers.dvr", "reason": "DVR provider" }
+  ],
+  "quirks": {
+    "remote_keys": [
+      { "scancode": 366, "button": "App button 1 (KEY_PVR)" },
+      { "scancode": 393, "button": "App button 2 (KEY_VIDEO)" },
+      { "scancode": 442, "button": "App button 3, YouTube (KEY_IMAGES)" },
+      { "scancode": 392, "button": "App button 4 (KEY_AUDIO)" },
+      { "scancode": 144, "button": "App button 5 (KEY_FILE)" },
+      { "scancode": 362, "button": "GUIDE (KEY_PROGRAM)" },
+      { "scancode": 405, "button": "LAST (KEY_LAST)" }
+    ],
+    "notes": [
+      "USB debugging alone opens ADB on port 5555; ro.adb.secure=1, so each computer is accepted on screen.",
+      "partnerinterface sends two app buttons to Netflix and YouTube; with Netflix not installed it opens the Play Store.",
+      "32-bit only."
+    ]
+  },
+  "tested": {
+    "date": "2026-10-24",
+    "reboot": true,
+    "notes": "Assistant (katniss) and firmware updates were disabled at the owner's request. Chromecast and YouTube kept."
+  }
+}

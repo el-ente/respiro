@@ -1,0 +1,9 @@
+{
+  "id": "vendors/sagemcom",
+  "name": "Sagemcom",
+  "keep": [
+    { "package": "com.sagemcom.stb.tvinput", "reason": "TV input service" },
+    { "package": "com.broadcom.nrdphelper", "reason": "Netflix status and HDMI audio hot-plug on Broadcom boxes" }
+  ],
+  "never_start": ["com.sagemcom.factorytest"]
+}

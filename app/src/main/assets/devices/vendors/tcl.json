@@ -1,0 +1,12 @@
+{
+  "id": "vendors/tcl",
+  "name": "TCL",
+  "keep": [
+    { "package": "com.tcl.tv", "reason": "Live TV app: plays HDMI and the tuner, and answers the Input button" },
+    { "package": "com.tcl.tvinput", "reason": "TV input services for HDMI, AV and the tuner" },
+    { "package": "com.tcl.tcl_bt_rcu_service", "reason": "Bluetooth remote" },
+    { "package": "com.tcl.autopair", "reason": "Bluetooth remote pairing" },
+    { "package": "com.tcl.suspension", "reason": "Quick Panel (source and picture shortcuts)" },
+    { "package": "com.tcl.system.server", "reason": "Remote key handling" }
+  ]
+}
