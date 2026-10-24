@@ -1,0 +1,21 @@
+{
+  "id": "common/google-tv",
+  "name": "Android TV with Google services",
+  "disable": [
+    { "package": "com.google.android.feedback", "group": "telemetry", "reason": "Google feedback and bug reports" },
+    { "package": "com.google.android.tvrecommendations", "group": "ads", "reason": "Recommendation and sponsored rows on the stock home screen" }
+  ],
+  "ask": [
+    { "package": "com.google.android.katniss", "category": "assistant", "label": "Google Assistant (the remote's mic button)" },
+    { "package": "com.google.android.youtube.tv", "category": "streaming", "label": "YouTube" },
+    { "package": "com.google.android.apps.mediashell", "category": "cast", "label": "Chromecast built-in" }
+  ],
+  "keep": [
+    { "package": "com.android.vending", "reason": "Play Store" },
+    { "package": "com.google.android.gms", "reason": "Play Services" },
+    { "package": "com.google.android.gsf", "reason": "Google Services Framework" },
+    { "package": "com.google.android.inputmethod.latin", "reason": "On-screen keyboard" },
+    { "package": "com.google.android.tv.remote.service", "reason": "Remote control service" },
+    { "package": "com.google.android.tvlauncher", "reason": "Stock home screen; only another launcher confirmed as Home may replace it" }
+  ]
+}

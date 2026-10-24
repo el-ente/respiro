@@ -27,13 +27,36 @@ These come from debloating real TVs. Breaking one can leave a TV that doesn't bo
 
 ## Device database
 
-- Lives in code, one entry per tested model: how to recognise it (`ro.product.*` props, build id), packages that
-  are safe to disable (grouped: telemetry, ads/content, background services, preloaded apps), packages to keep
-  and why, and known firmware quirks.
-- Only add an entry that was tested on a real device, including a reboot. Note what was not tested.
-- Never store identifiers of a person's device: serial numbers, MACs, Wi-Fi names, IPs.
+- JSON files in `app/src/main/assets/devices/`, layered `common/` → `vendors/` → `models/<vendor>/<model>.json`.
+  The format is in that folder's README.md; keep it in sync with any change to the format.
+- One model per file, added through a pull request. Only add a model that was tested on a real TV, including a
+  reboot, and say in `tested.notes` what wasn't tested.
+- `keep` wins over `disable` in every layer. Core Android packages are protected in code, never by the data.
+- Never store identifiers of a person's TV: serial numbers, MACs, Wi-Fi names, IPs.
 
 ## Workflow
 
-- Work on each feature in its own branch; never commit directly to `main`.
-- Keep README in sync with behaviour in the same change.
+1. Before starting a feature, fetch the main branch: `git fetch origin`.
+2. Work on every feature in its own git worktree, branched from `origin/HEAD`. Never commit directly on `main`.
+3. Verify the change compiles: `JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew -q :app:compileDebugKotlin`
+   (Gradle rejects newer JDKs; `local.properties` is gitignored, copy it from the main checkout).
+4. Commit, push the branch, and open the PR with `gh pr create` against `main`.
+5. Keep README.md in sync with behaviour in the same change.
+
+## Testing on a TV
+
+- Use a release build: debug builds of a Compose app start several times slower on a 1 GB TV.
+- Before pressing keys or opening anything on a TV, check what it is showing
+  (`dumpsys activity activities | grep mFocusedApp`); someone may be watching. Put it back when done.
+- `input keyevent` takes one key per call; check that a screenshot changed before trusting it (byte-identical
+  captures are stale frames).
+
+## Screenshots in PRs
+
+A PR that changes the UI carries a screenshot in its description.
+
+1. Capture from the TV or emulator: `adb exec-out screencap -p > <screen>.png`.
+2. Cover anything personal first: Wi-Fi names, account names, IPs.
+3. Push it to the orphan `pr-assets` branch under `<pr-branch>/<screen>.png` (`git worktree add ../respiro-pr-assets
+   pr-assets`). Never merge or rebase that branch.
+4. Embed it with its raw.githubusercontent.com URL on the `pr-assets` branch.

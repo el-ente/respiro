@@ -1,0 +1,59 @@
+{
+  "id": "tcl/c06-2k-gb",
+  "name": "TCL 43\" Smart TV (C06_2K_GB)",
+  "match": {
+    "ro.product.manufacturer": "TCL",
+    "ro.product.device": "C06",
+    "ro.product.name": "C06_2K_GB"
+  },
+  "firmware": { "android": "11", "sdk": 30, "build": "AR2101" },
+  "extends": ["common/google-tv", "vendors/tcl"],
+  "disable": [
+    { "package": "com.tcl.usercenter", "group": "telemetry", "reason": "TCL account" },
+    { "package": "com.tcl.guard", "group": "services", "reason": "TGuard background cleaner" },
+    { "package": "com.tcl.partnercustomizer", "group": "ads", "reason": "Promo rows on the stock home screen" },
+    { "package": "com.tcl.waterfall.overseas", "group": "ads", "reason": "TCL video portal" },
+    { "package": "com.tcl.messagebox", "group": "ads", "reason": "TCL push messages and promos" },
+    { "package": "com.tcl.esticker", "group": "ads", "reason": "Store demo sticker" },
+    { "package": "com.tcl.t_solo", "group": "ads", "reason": "TCL promo app" },
+    { "package": "com.tcl.dashboard", "group": "ads", "reason": "TCL HOME panel, gift box and promos" },
+    { "package": "android.autoinstalls.config.tcl.device", "group": "services", "reason": "Partner auto-installer" },
+    { "package": "com.tcl.audioplayer", "group": "preloaded", "reason": "Stock audio player" },
+    { "package": "com.tcl.imageplayer", "group": "preloaded", "reason": "Stock image player" },
+    { "package": "com.tcl.copydatatotv", "group": "preloaded", "reason": "Data migration utility" },
+    { "package": "com.google.android.partnersetup", "group": "services", "reason": "Partner setup" },
+    { "package": "com.google.android.apps.nbu.smartconnect.tv", "group": "services", "reason": "Smart Connect" },
+    { "package": "com.google.android.play.games", "group": "preloaded", "reason": "Play Games" },
+    { "package": "com.google.android.videos", "group": "preloaded", "reason": "Google Play Movies & TV" },
+    { "package": "com.google.android.youtube.tvmusic", "group": "preloaded", "reason": "YouTube Music stub" },
+    { "package": "com.google.android.syncadapters.calendar", "group": "services", "reason": "Calendar sync" },
+    { "package": "com.google.android.backdrop", "group": "services", "reason": "Photo screensaver (about 105 MB of RAM)" },
+    { "package": "com.google.android.tungsten.setupwraith", "group": "services", "reason": "Setup wizard, done after the first setup" }
+  ],
+  "ask": [
+    { "package": "com.tcl.ttvs", "category": "updates", "label": "TCL firmware updates" },
+    { "package": "com.google.android.tv.assistant", "category": "assistant", "label": "Google Assistant for TV" },
+    { "package": "com.tcl.smartalexa", "category": "assistant", "label": "Alexa" },
+    { "package": "com.netflix.ninja", "category": "streaming", "label": "Netflix" },
+    { "package": "com.amazon.amazonvideo.livingroom", "category": "streaming", "label": "Prime Video" },
+    { "package": "tv.wuaki.apptv", "category": "streaming", "label": "Rakuten TV" },
+    { "package": "au.com.stan.and", "category": "streaming", "label": "Stan" }
+  ],
+  "quirks": {
+    "reenabled_at_boot": ["com.google.android.backdrop", "com.google.android.tungsten.setupwraith"],
+    "remote_keys": [
+      { "scancode": 204, "button": "TCL HOME; does nothing once com.tcl.dashboard is disabled" },
+      { "scancode": 365, "button": "Guide (EPG)" }
+    ],
+    "notes": [
+      "Switch the screensaver to another one before disabling backdrop; the firmware re-enables backdrop at boot, but it stays idle.",
+      "The saved Wi-Fi network belongs to Play Services here, so disabling setupwraith keeps the TV online.",
+      "1 GB of RAM (low_ram); 32-bit only."
+    ]
+  },
+  "tested": {
+    "date": "2026-10-24",
+    "reboot": true,
+    "notes": "Netflix, Prime Video, Rakuten TV, Stan, Alexa, Play Games, Movies & TV, YouTube Music, calendar sync and Assistant were already disabled on the tested TV before this session; the TV worked with them off, but disabling them was not done by Respiro's process."
+  }
+}
