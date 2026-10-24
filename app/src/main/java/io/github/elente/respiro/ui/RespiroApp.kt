@@ -37,6 +37,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
+import io.github.elente.respiro.AppsResult
 import io.github.elente.respiro.InstalledApp
 import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
@@ -80,7 +81,7 @@ fun RespiroApp(vm: MainViewModel) {
                     onFreeSpace = vm::freeSpace,
                     onReport = { vm.saveReport(current.props) },
                 )
-                is TvState.Installed -> Installed(current, onPick = vm::askUninstall)
+                is TvState.Installed -> Installed(current, onPick = vm::askUninstall, onTurnOn = vm::turnOn)
                 is TvState.SpaceFreed -> SpaceFreed(current.freedMb, onBack = vm::inspect)
                 is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
                 is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
@@ -137,7 +138,8 @@ private fun Ready(
         }
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
         // Never the default focus: uninstalling can't be undone.
-        if (ready.removable > 0) Button(onClick = onUninstall) { Text(stringResource(R.string.uninstall_apps, ready.removable)) }
+        val apps = ready.removable + ready.switchedOff
+        if (apps > 0) Button(onClick = onUninstall) { Text(stringResource(R.string.uninstall_apps, apps)) }
         Button(onClick = onFreeSpace) { Text(stringResource(R.string.free_space)) }
         Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
     }
@@ -160,43 +162,72 @@ private fun Ready(
 
 /** Apps the user installed, biggest first: OK on one asks to confirm its uninstall. */
 @Composable
-private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Unit) {
+private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Unit, onTurnOn: (InstalledApp) -> Unit) {
     val context = LocalContext.current
     val total = installed.apps.sumOf { it.bytes }
     Heading(stringResource(R.string.installed_title))
-    installed.result?.let { result ->
-        if (result.removed) {
-            Text(
-                stringResource(R.string.uninstalled_result, result.label, Formatter.formatShortFileSize(context, result.bytes)) +
-                    "  ·  " + stringResource(R.string.uninstalled_total, Formatter.formatShortFileSize(context, result.totalBytes)),
-                color = Success,
-                fontSize = 18.sp,
-            )
-        } else {
-            Text(stringResource(R.string.uninstall_failed, result.label), color = Warning, fontSize = 18.sp)
-        }
-    }
-    if (installed.apps.isEmpty()) {
+    installed.result?.let { AppsResultLine(it) }
+    if (installed.apps.isEmpty() && installed.switchedOff.isEmpty()) {
         Body(stringResource(R.string.installed_empty))
         return
     }
-    Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
+    if (installed.apps.isNotEmpty()) {
+        Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
+    }
     val firstRow = remember { FocusRequester() }
+    // After a turn-on, stay in the switched-off section so the next OK can't open an uninstall by surprise.
+    val afterTurnOn = installed.result is AppsResult.TurnedOn || installed.result is AppsResult.TurnOnFailed
+    val first = if (afterTurnOn) installed.switchedOff.firstOrNull() ?: installed.apps.firstOrNull()
+    else installed.apps.firstOrNull() ?: installed.switchedOff.firstOrNull()
+    val focusFirst = { app: InstalledApp -> if (app == first) Modifier.focusRequester(firstRow) else Modifier }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        items(installed.apps, key = { it.named.pkg }) { app ->
+        items(installed.apps, key = { "installed:" + it.named.pkg }) { app ->
             ListItem(
                 selected = false,
                 onClick = { onPick(app) },
                 headlineContent = { Text(app.named.label) },
-                leadingContent = { app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(40.dp)) } },
+                leadingContent = { AppIcon(app) },
                 trailingContent = { Text(Formatter.formatShortFileSize(context, app.bytes)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(if (app == installed.apps.first()) Modifier.focusRequester(firstRow) else Modifier),
+                modifier = Modifier.fillMaxWidth().then(focusFirst(app)),
+            )
+        }
+        if (installed.switchedOff.isNotEmpty()) {
+            item(key = "switched-off-title") { Body(stringResource(R.string.switched_off_section)) }
+        }
+        items(installed.switchedOff, key = { "off:" + it.named.pkg }) { app ->
+            ListItem(
+                selected = false,
+                onClick = { onTurnOn(app) },
+                headlineContent = { Text(app.named.label) },
+                supportingContent = { Text(stringResource(R.string.switched_off_row)) },
+                leadingContent = { AppIcon(app) },
+                trailingContent = { Text(stringResource(R.string.turn_back_on)) },
+                modifier = Modifier.fillMaxWidth().then(focusFirst(app)),
             )
         }
     }
     LaunchedEffect(installed) { runCatching { firstRow.requestFocus() } }
+}
+
+@Composable
+private fun AppIcon(app: InstalledApp) {
+    app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(40.dp)) }
+}
+
+@Composable
+private fun AppsResultLine(result: AppsResult) {
+    val context = LocalContext.current
+    when (result) {
+        is AppsResult.Uninstalled -> Text(
+            stringResource(R.string.uninstalled_result, result.label, Formatter.formatShortFileSize(context, result.bytes)) +
+                "  ·  " + stringResource(R.string.uninstalled_total, Formatter.formatShortFileSize(context, result.totalBytes)),
+            color = Success,
+            fontSize = 18.sp,
+        )
+        is AppsResult.UninstallFailed -> Text(stringResource(R.string.uninstall_failed, result.label), color = Warning, fontSize = 18.sp)
+        is AppsResult.TurnedOn -> Text(stringResource(R.string.turned_on_result, result.label), color = Success, fontSize = 18.sp)
+        is AppsResult.TurnOnFailed -> Text(stringResource(R.string.turn_on_failed, result.label), color = Warning, fontSize = 18.sp)
+    }
 }
 
 @Composable

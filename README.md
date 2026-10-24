@@ -16,6 +16,8 @@ preinstalled (telemetry, ads, promo rows, duplicate services) and switches it of
 - **Frees up space any time.** Clears every app's cache (apps keep their data) and shows how much it freed.
 - **Uninstalls apps you installed, when you choose.** Biggest first, one at a time with a confirmation, or the ones
   you said you don't use. These can't be undone from Respiro; the Play Store has them.
+- **Your apps** lists both: the apps you installed, to uninstall, and the apps Respiro switched off, to turn back on
+  with one press. Apps switched off by anyone else never appear there.
 - **Gives the space back.** Once a preinstalled app is off, Respiro removes its updates and clears its data; the
   factory version stays, so turning it back on works (the Play Store updates it again). Apps you installed keep
   their data.
