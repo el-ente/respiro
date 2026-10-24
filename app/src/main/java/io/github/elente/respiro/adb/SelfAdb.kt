@@ -20,6 +20,12 @@ object SelfAdb {
     /** One connection for a series of commands, closed when [block] returns. */
     fun <T> session(context: Context, block: (Shell) -> T): T =
         Dadb.create(HOST, PORT, keyPair(context), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS).use { adb ->
+            // A first command proves the connection and the authorisation; failures here are the user's to fix.
+            try {
+                adb.shell("true")
+            } catch (error: Exception) {
+                throw ConnectionFailed(error)
+            }
             block(Shell { command -> adb.shell(command).allOutput.trim() })
         }
 

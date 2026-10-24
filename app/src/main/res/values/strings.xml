@@ -46,4 +46,5 @@
     <string name="undo_help">An app turned back on returns as it came from the factory; the Play Store updates it again.</string>
     <string name="failed_debugging_off">Debugging is off. Go to Settings › Device Preferences › About, press OK on Build seven times, then in Developer options turn on USB debugging (and Network debugging if your TV has it). Then try again.</string>
     <string name="failed_not_allowed">Android didn\'t allow Respiro in time. Try again and choose Always allow when asked. If no question appears, restart the TV: a question left pending earlier can hide new ones.</string>
+    <string name="failed_during_work">The connection to the TV dropped while Respiro was working. What it switched off so far is listed under See what\'s off; open Respiro again to finish.</string>
 </resources>

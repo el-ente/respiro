@@ -75,11 +75,10 @@ private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
     when (failed.problem) {
         ConnectionProblem.DEBUGGING_OFF -> Body(stringResource(R.string.failed_debugging_off))
         ConnectionProblem.NOT_ALLOWED -> Body(stringResource(R.string.failed_not_allowed))
-        ConnectionProblem.OTHER -> {
-            Body(stringResource(R.string.failed_help))
-            Body(failed.detail)
-        }
+        ConnectionProblem.OTHER -> Body(stringResource(R.string.failed_help))
+        ConnectionProblem.DURING_WORK -> Body(stringResource(R.string.failed_during_work))
     }
+    Body(failed.detail)
     FocusedButton(stringResource(R.string.retry), onRetry)
     Body(stringResource(R.string.debugging_reminder))
 }
