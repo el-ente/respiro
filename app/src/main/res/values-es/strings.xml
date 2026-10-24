@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="connecting">Conectando con este televisor… Si Android pide permitir la depuración, elige Permitir siempre.</string>
+    <string name="connecting_title">Conectando con este televisor…</string>
+    <string name="connecting_help">Si Android pide permitir la depuración, elige Permitir siempre.</string>
     <string name="failed_title">Respiro no puede acceder a la depuración del televisor</string>
     <string name="failed_help">Activa Opciones para desarrolladores › Depuración por USB (y Depuración por red si tu televisor la tiene) y abre Respiro otra vez. Si sigue sin funcionar, reinicia el televisor.</string>
-    <string name="known_tv">Este es un %1$s</string>
     <string name="unknown_tv">Respiro todavía no conoce este televisor (%1$s %2$s)</string>
     <string name="unknown_tv_help">Solo se apagará lo que es seguro en cualquier Android TV.</string>
-    <plurals name="to_disable">
-        <item quantity="one">%1$d cosa para apagar</item>
-        <item quantity="other">%1$d cosas para apagar</item>
-    </plurals>
-    <plurals name="to_ask">
-        <item quantity="one">%1$d app sobre la que te vamos a preguntar</item>
-        <item quantity="other">%1$d apps sobre las que te vamos a preguntar</item>
-    </plurals>
     <string name="retry">Reintentar</string>
     <string name="start">Apagarlas</string>
     <string name="see_switched_off">Ver lo apagado (%1$d)</string>
@@ -21,13 +13,6 @@
     <string name="ask_title">¿Cuáles de estas usas?</string>
     <string name="ask_help">Deja encendido lo que usas. Respiro apaga el resto junto con la lista.</string>
     <string name="switch_off_now">Continuar</string>
-    <string name="applying">Apagando… %1$d de %2$d</string>
-    <plurals name="switched_off">
-        <item quantity="one">%1$d cosa apagada</item>
-        <item quantity="other">%1$d cosas apagadas</item>
-    </plurals>
-    <string name="turn_debugging_off">Listo. Vuelve a desactivar la depuración por USB y por red en Ajustes › Opciones para desarrolladores: si queda activa, otros dispositivos de tu Wi-Fi podrían controlar este televisor.</string>
-    <string name="undo_title">Apagado por Respiro</string>
     <string name="turn_back_on">Volver a encender</string>
     <string name="turn_all_back_on">Volver a encender todo</string>
     <string name="nothing_switched_off">No hay nada apagado.</string>
@@ -44,26 +29,18 @@
     <string name="failed_during_work">La conexión con el televisor se cortó mientras Respiro trabajaba. Lo que apagó hasta ahora está en Ver lo apagado; abre Respiro otra vez para terminar.</string>
     <string name="save_report">Guardar informe del televisor</string>
     <string name="report_saved_title">Informe guardado</string>
-    <string name="report_saved_help">Está en %1$s. Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
+    <string name="report_saved_help">Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
     <string name="reversible">no se borra nada y todo se puede deshacer</string>
     <string name="already_clean">Este televisor ya está liviano.</string>
-    <string name="i_use_it">La uso: dejarla encendida</string>
-    <string name="i_dont_use_it">No la uso: apagarla</string>
     <string name="last_step">Último paso: apaga la depuración</string>
     <string name="debug_step_1">Abre Ajustes › Preferencias del dispositivo › Opciones para desarrolladores.</string>
     <string name="debug_step_2">Desactiva Depuración por USB, y Depuración por red si tu televisor la tiene.</string>
     <string name="debug_step_3">La próxima vez Respiro volverá a pedir permiso de depuración; es normal.</string>
     <string name="uninstall_apps">Tus apps (%1$d)</string>
     <string name="will_uninstall">Se desinstala · %1$s</string>
-    <string name="i_dont_use_it_uninstall">No la uso: desinstalarla</string>
     <plurals name="apps_uninstalled">
         <item quantity="one">Se desinstaló %1$d app que instalaste</item>
         <item quantity="other">Se desinstalaron %1$d apps que instalaste</item>
-    </plurals>
-    <string name="installed_title">Tus apps</string>
-    <plurals name="installed_summary">
-        <item quantity="one">%1$d app · ocupa %2$s. Elígela para desinstalarla.</item>
-        <item quantity="other">%1$d apps · ocupan %2$s. Elige una para desinstalarla.</item>
     </plurals>
     <string name="installed_empty">No hay apps instaladas por ti. Nada para desinstalar.</string>
     <string name="uninstalled_result">%1$s desinstalada · se liberaron %2$s</string>
@@ -80,4 +57,30 @@
     <string name="switched_off_row">Apagada · OK para encenderla</string>
     <string name="turned_on_result">%1$s está encendida de nuevo</string>
     <string name="turn_on_failed">No se pudo encender %1$s.</string>
+    <plurals name="hero_to_disable">
+        <item quantity="one">cosa para apagar</item>
+        <item quantity="other">cosas para apagar</item>
+    </plurals>
+    <plurals name="hero_to_ask">
+        <item quantity="one">app sobre la que te vamos a preguntar</item>
+        <item quantity="other">apps sobre las que te vamos a preguntar</item>
+    </plurals>
+    <plurals name="hero_switched_off">
+        <item quantity="one">cosa apagada</item>
+        <item quantity="other">cosas apagadas</item>
+    </plurals>
+    <plurals name="hero_installed">
+        <item quantity="one">ocupados por %1$d app que instalaste</item>
+        <item quantity="other">ocupados por %1$d apps que instalaste</item>
+    </plurals>
+    <string name="hero_safe_basics">Solo lo básico y seguro</string>
+    <string name="hero_applying">apagando…</string>
+    <string name="hero_freed_mb">+%1$d MB</string>
+    <string name="what_goes">Se apaga: %1$s</string>
+    <string name="chip_use">La uso</string>
+    <string name="chip_off">Apagar</string>
+    <string name="chip_uninstall">Desinstalar</string>
+    <string name="continue_count">Continuar · apagar %1$d</string>
+    <string name="dont_turn_off">No apagues el televisor.</string>
+    <string name="continue_count_uninstall">Continuar · apagar %1$d · desinstalar %2$d</string>
 </resources>

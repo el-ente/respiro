@@ -1,44 +1,28 @@
 package io.github.elente.respiro.ui
 
-import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
-import androidx.tv.material3.ListItem
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
+import androidx.tv.material3.SwitchDefaults
 import androidx.tv.material3.Text
-import androidx.tv.material3.darkColorScheme
-import io.github.elente.respiro.AppsResult
-import io.github.elente.respiro.InstalledApp
 import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
 import io.github.elente.respiro.TvState
@@ -47,287 +31,235 @@ import io.github.elente.respiro.data.DebloatPlan
 import io.github.elente.respiro.data.NamedPackage
 import io.github.elente.respiro.debloat.SkipReason
 
-private val Background = Color(0xFF0B0F14)
-private val TextColor = Color(0xFFF2F4F7)
-private val Muted = Color(0xFF9AA4B2)
-private val Success = Color(0xFF7FD1AE)
-private val Warning = Color(0xFFF2B84B)
-
 @Composable
 fun RespiroApp(vm: MainViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
+    var deviceName by remember { mutableStateOf("") }
+    (state as? TvState.Ready)?.let { deviceName = it.plan.model?.name ?: "${it.manufacturer} ${it.model}" }
     // Back steps out of the uninstall screens and lists; on the plan it leaves Respiro as usual.
     BackHandler(enabled = state is TvState.ConfirmUninstall) { vm.cancelUninstall() }
     BackHandler(
         enabled = state is TvState.Installed || state is TvState.Undo || state is TvState.ReportSaved || state is TvState.SpaceFreed,
     ) { vm.inspect() }
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Background)
-                .padding(horizontal = 56.dp, vertical = 40.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(stringResource(R.string.app_name), color = TextColor, fontSize = 34.sp, fontWeight = FontWeight.Light)
-            when (val current = state) {
-                TvState.Connecting -> Body(stringResource(R.string.connecting))
-                is TvState.Failed -> Failed(current, onRetry = vm::inspect)
-                is TvState.Ready -> Ready(
-                    current,
-                    onStart = { vm.ask(current.plan, current.userApps) },
-                    onUndo = vm::openUndo,
-                    onUninstall = vm::openInstalled,
-                    onFreeSpace = vm::freeSpace,
-                    onReport = { vm.saveReport(current.props) },
-                )
-                is TvState.Installed -> Installed(current, onPick = vm::askUninstall, onTurnOn = vm::turnOn)
-                is TvState.SpaceFreed -> SpaceFreed(current.freedMb, onBack = vm::inspect)
-                is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
-                is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
-                is TvState.Asking -> Asking(current.plan, current.userApps, onApply = { keep -> vm.apply(current.plan, keep, current.userApps) })
-                is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
-                TvState.Working -> Body(stringResource(R.string.working))
-                is TvState.Done -> Done(current, onUndo = vm::openUndo)
-                is TvState.Undo -> Undo(current.packages, onTurnBackOn = vm::turnBackOn, onBack = vm::inspect)
+    RespiroTheme {
+        when (val current = state) {
+            TvState.Connecting -> Connecting(deviceName)
+            is TvState.Failed -> Failed(deviceName, current, onRetry = vm::inspect)
+            is TvState.Ready -> Ready(
+                deviceName,
+                current,
+                onStart = { vm.ask(current.plan, current.userApps) },
+                onUndo = vm::openUndo,
+                onApps = vm::openInstalled,
+                onFreeSpace = vm::freeSpace,
+                onReport = { vm.saveReport(current.props) },
+            )
+            is TvState.Installed -> Installed(deviceName, current, onPick = vm::askUninstall, onTurnOn = vm::turnOn)
+            is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
+            is TvState.SpaceFreed -> SpaceFreed(deviceName, current.freedMb, onBack = vm::inspect)
+            is TvState.ReportSaved -> ReportSaved(deviceName, current.path, onBack = vm::inspect)
+            is TvState.Asking -> Asking(deviceName, current.plan, current.userApps) { keep ->
+                vm.apply(current.plan, keep, current.userApps)
             }
+            is TvState.Applying -> Busy(deviceName, current.done, current.total)
+            TvState.Working -> Busy(deviceName, done = null, total = null)
+            is TvState.Done -> Done(deviceName, current, onUndo = vm::openUndo)
+            is TvState.Undo -> Undo(deviceName, current.packages, onTurnBackOn = vm::turnBackOn, onBack = vm::inspect)
         }
     }
 }
 
 @Composable
-private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
-    Heading(stringResource(R.string.failed_title))
-    when (failed.problem) {
-        ConnectionProblem.DEBUGGING_OFF -> Body(stringResource(R.string.failed_debugging_off))
-        ConnectionProblem.NOT_ALLOWED -> Body(stringResource(R.string.failed_not_allowed))
-        ConnectionProblem.OTHER -> Body(stringResource(R.string.failed_help))
-        ConnectionProblem.DURING_WORK -> Body(stringResource(R.string.failed_during_work))
+private fun Connecting(deviceName: String) {
+    RespiroScaffold(deviceName, hero = null) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(Gutter, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PulsingDot()
+            HeroLabel(stringResource(R.string.connecting_title))
+            Body(stringResource(R.string.connecting_help))
+        }
     }
-    Body(failed.detail)
-    FocusedButton(stringResource(R.string.retry), onRetry)
-    Body(stringResource(R.string.debugging_reminder))
+}
+
+@Composable
+private fun Failed(deviceName: String, failed: TvState.Failed, onRetry: () -> Unit) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            Text("⚠", color = Amber, fontSize = 64.sp)
+            HeroLabel(stringResource(R.string.failed_title))
+        },
+    ) {
+        Body(stringResource(failedHelp(failed.problem)), color = TextColor)
+        ActionRow(stringResource(R.string.retry), ActionVariant.PRIMARY, onRetry, initialFocus())
+        Small(failed.detail, color = Danger)
+        Small(stringResource(R.string.debugging_reminder))
+    }
+}
+
+private fun failedHelp(problem: ConnectionProblem) = when (problem) {
+    ConnectionProblem.DEBUGGING_OFF -> R.string.failed_debugging_off
+    ConnectionProblem.NOT_ALLOWED -> R.string.failed_not_allowed
+    ConnectionProblem.OTHER -> R.string.failed_help
+    ConnectionProblem.DURING_WORK -> R.string.failed_during_work
 }
 
 @Composable
 private fun Ready(
+    deviceName: String,
     ready: TvState.Ready,
     onStart: () -> Unit,
     onUndo: () -> Unit,
-    onUninstall: () -> Unit,
+    onApps: () -> Unit,
     onFreeSpace: () -> Unit,
     onReport: () -> Unit,
 ) {
     val plan = ready.plan
-    val model = plan.model
-    if (model != null) {
-        Heading(stringResource(R.string.known_tv, model.name))
-    } else {
-        Heading(stringResource(R.string.unknown_tv, ready.manufacturer, ready.model))
-        Body(stringResource(R.string.unknown_tv_help))
-    }
-    if (plan.disable.isNotEmpty()) {
-        Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size) + "  ·  " + stringResource(R.string.reversible))
-    }
-    if (plan.ask.isNotEmpty()) Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
-    // Buttons above the list, so a long list can never push them off screen.
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        when {
-            plan.disable.isNotEmpty() -> FocusedButton(stringResource(R.string.start), onStart)
-            plan.ask.isNotEmpty() -> FocusedButton(stringResource(R.string.switch_off_now), onStart)
+    val hasWork = plan.disable.isNotEmpty() || plan.ask.isNotEmpty()
+    val apps = ready.removable + ready.switchedOff
+    val toUninstall = ready.toSwitchOff.filter { it.pkg in ready.userApps }
+    // Start runs at once when nothing is asked, so it is permanent, and never focused, when it uninstalls.
+    val startVariant = if (toUninstall.isEmpty()) ActionVariant.PRIMARY else ActionVariant.PERMANENT
+    val focusStart = hasWork && toUninstall.isEmpty()
+    RespiroScaffold(deviceName, hero = { ReadyHero(ready, isReversible = toUninstall.isEmpty()) }) {
+        if (hasWork) {
+            val start = if (plan.disable.isNotEmpty()) R.string.start else R.string.switch_off_now
+            ActionRow(stringResource(start), startVariant, onStart, if (focusStart) initialFocus() else Modifier)
         }
-        if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
+        val firstSecondaryFocus = if (focusStart) Modifier else initialFocus()
+        if (ready.switchedOff > 0) {
+            ActionRow(stringResource(R.string.see_switched_off, ready.switchedOff), ActionVariant.SECONDARY, onUndo, firstSecondaryFocus)
+        }
         // Never the default focus: uninstalling can't be undone.
-        val apps = ready.removable + ready.switchedOff
-        if (apps > 0) Button(onClick = onUninstall) { Text(stringResource(R.string.uninstall_apps, apps)) }
-        Button(onClick = onFreeSpace) { Text(stringResource(R.string.free_space)) }
-        Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
-    }
-    if (plan.disable.isEmpty() && plan.ask.isEmpty()) Body(stringResource(R.string.already_clean))
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        items(ready.toSwitchOff, key = { it.pkg }) { named ->
-            ListItem(
-                selected = false,
-                onClick = {},
-                headlineContent = { Text(named.label) },
-                supportingContent = {
-                    val reason = named.reason ?: named.pkg
-                    Text(if (named.pkg in ready.userApps) stringResource(R.string.will_uninstall, reason) else reason)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
+        if (apps > 0) ActionRow(stringResource(R.string.uninstall_apps, apps), ActionVariant.PERMANENT, onApps)
+        val freeSpaceFocus = if (ready.switchedOff > 0) Modifier else firstSecondaryFocus
+        ActionRow(stringResource(R.string.free_space), ActionVariant.SECONDARY, onFreeSpace, freeSpaceFocus)
+        ActionRow(stringResource(R.string.save_report), ActionVariant.SECONDARY, onReport)
+        if (toUninstall.isNotEmpty()) {
+            Small(stringResource(R.string.will_uninstall, toUninstall.joinToString(", ") { it.label }), color = Amber)
+        }
+        val toDisable = ready.toSwitchOff - toUninstall.toSet()
+        if (toDisable.isNotEmpty()) {
+            Small(stringResource(R.string.what_goes, toDisable.joinToString(", ") { it.label }), maxLines = 1)
         }
     }
 }
 
-/** Apps the user installed, biggest first: OK on one asks to confirm its uninstall. */
 @Composable
-private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Unit, onTurnOn: (InstalledApp) -> Unit) {
-    val context = LocalContext.current
-    val total = installed.apps.sumOf { it.bytes }
-    Heading(stringResource(R.string.installed_title))
-    installed.result?.let { AppsResultLine(it) }
-    if (installed.apps.isEmpty() && installed.switchedOff.isEmpty()) {
-        Body(stringResource(R.string.installed_empty))
-        return
+private fun ColumnScope.ReadyHero(ready: TvState.Ready, isReversible: Boolean) {
+    val plan = ready.plan
+    if (plan.model == null) {
+        HeroLabel(stringResource(R.string.hero_safe_basics), color = Amber)
+        Small(stringResource(R.string.unknown_tv_help))
     }
-    if (installed.apps.isNotEmpty()) {
-        Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
-    }
-    val firstRow = remember { FocusRequester() }
-    // After a turn-on, stay in the switched-off section so the next OK can't open an uninstall by surprise.
-    val afterTurnOn = installed.result is AppsResult.TurnedOn || installed.result is AppsResult.TurnOnFailed
-    val first = if (afterTurnOn) installed.switchedOff.firstOrNull() ?: installed.apps.firstOrNull()
-    else installed.apps.firstOrNull() ?: installed.switchedOff.firstOrNull()
-    val focusFirst = { app: InstalledApp -> if (app == first) Modifier.focusRequester(firstRow) else Modifier }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        items(installed.apps, key = { "installed:" + it.named.pkg }) { app ->
-            ListItem(
-                selected = false,
-                onClick = { onPick(app) },
-                headlineContent = { Text(app.named.label) },
-                leadingContent = { AppIcon(app) },
-                trailingContent = { Text(Formatter.formatShortFileSize(context, app.bytes)) },
-                modifier = Modifier.fillMaxWidth().then(focusFirst(app)),
-            )
+    when {
+        plan.disable.isNotEmpty() -> {
+            HeroNumber("${plan.disable.size}")
+            HeroLabel(pluralStringResource(R.plurals.hero_to_disable, plan.disable.size))
+            if (isReversible) Small("✓ " + stringResource(R.string.reversible))
         }
-        if (installed.switchedOff.isNotEmpty()) {
-            item(key = "switched-off-title") { Body(stringResource(R.string.switched_off_section)) }
+        plan.ask.isNotEmpty() -> {
+            HeroNumber("${plan.ask.size}")
+            HeroLabel(pluralStringResource(R.plurals.hero_to_ask, plan.ask.size))
         }
-        items(installed.switchedOff, key = { "off:" + it.named.pkg }) { app ->
-            ListItem(
-                selected = false,
-                onClick = { onTurnOn(app) },
-                headlineContent = { Text(app.named.label) },
-                supportingContent = { Text(stringResource(R.string.switched_off_row)) },
-                leadingContent = { AppIcon(app) },
-                trailingContent = { Text(stringResource(R.string.turn_back_on)) },
-                modifier = Modifier.fillMaxWidth().then(focusFirst(app)),
-            )
+        else -> {
+            HeroNumber("✓")
+            HeroLabel(stringResource(R.string.already_clean), color = Air)
         }
     }
-    LaunchedEffect(installed) { runCatching { firstRow.requestFocus() } }
-}
-
-@Composable
-private fun AppIcon(app: InstalledApp) {
-    app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(40.dp)) }
-}
-
-@Composable
-private fun AppsResultLine(result: AppsResult) {
-    val context = LocalContext.current
-    when (result) {
-        is AppsResult.Uninstalled -> Text(
-            stringResource(R.string.uninstalled_result, result.label, Formatter.formatShortFileSize(context, result.bytes)) +
-                "  ·  " + stringResource(R.string.uninstalled_total, Formatter.formatShortFileSize(context, result.totalBytes)),
-            color = Success,
-            fontSize = 18.sp,
-        )
-        is AppsResult.UninstallFailed -> Text(stringResource(R.string.uninstall_failed, result.label), color = Warning, fontSize = 18.sp)
-        is AppsResult.TurnedOn -> Text(stringResource(R.string.turned_on_result, result.label), color = Success, fontSize = 18.sp)
-        is AppsResult.TurnOnFailed -> Text(stringResource(R.string.turn_on_failed, result.label), color = Warning, fontSize = 18.sp)
-    }
-}
-
-@Composable
-private fun SpaceFreed(freedMb: Long?, onBack: () -> Unit) {
-    Text(
-        if (freedMb != null) stringResource(R.string.space_freed, freedMb) else stringResource(R.string.caches_cleared),
-        color = Success,
-        fontSize = 32.sp,
-        fontWeight = FontWeight.SemiBold,
-    )
-    Body(stringResource(R.string.caches_help))
-    FocusedButton(stringResource(R.string.back), onBack)
-}
-
-/** Cancel comes first and takes focus, so pressing OK twice by mistake removes nothing. */
-@Composable
-private fun ConfirmUninstall(app: InstalledApp, onUninstall: (InstalledApp) -> Unit, onCancel: () -> Unit) {
-    val context = LocalContext.current
-    Heading(stringResource(R.string.uninstall_confirm_title, app.named.label))
-    Body(stringResource(R.string.uninstall_confirm_body, Formatter.formatShortFileSize(context, app.bytes)))
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        FocusedButton(stringResource(R.string.cancel), onCancel)
-        Button(onClick = { onUninstall(app) }) { Text(stringResource(R.string.uninstall), color = Warning) }
-    }
-}
-
-@Composable
-private fun ReportSaved(path: String, onBack: () -> Unit) {
-    Heading(stringResource(R.string.report_saved_title))
-    Body(stringResource(R.string.report_saved_help, path.removePrefix("/sdcard/")))
-    FocusedButton(stringResource(R.string.back), onBack)
 }
 
 /** One switch per app Respiro asks about; on means "I use it, leave it". */
 @Composable
-private fun ColumnScope.Asking(plan: DebloatPlan, userApps: Set<String>, onApply: (Set<String>) -> Unit) {
+private fun Asking(deviceName: String, plan: DebloatPlan, userApps: Set<String>, onApply: (Set<String>) -> Unit) {
     var keep by remember { mutableStateOf(plan.ask.map { it.pkg }.toSet()) }
-    Heading(stringResource(R.string.ask_title))
-    Body(stringResource(R.string.ask_help))
-    LazyColumn(modifier = Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(plan.ask, key = { it.pkg }) { entry ->
-            val used = entry.pkg in keep
-            ListItem(
-                selected = false,
-                onClick = { keep = if (used) keep - entry.pkg else keep + entry.pkg },
-                headlineContent = { Text(entry.label) },
-                supportingContent = {
-                    val off = if (entry.pkg in userApps) R.string.i_dont_use_it_uninstall else R.string.i_dont_use_it
-                    Text(stringResource(if (used) R.string.i_use_it else off))
-                },
-                trailingContent = { Switch(checked = used, onCheckedChange = null) },
-                modifier = Modifier.fillMaxWidth(),
-            )
+    val going = plan.disable + plan.ask.map { it.pkg }.filter { it !in keep }
+    val uninstalling = going.count { it in userApps }
+    val switchingOff = going.size - uninstalling
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            Title(stringResource(R.string.ask_title))
+            Body(stringResource(R.string.ask_help))
+        },
+    ) {
+        LazyColumn(modifier = Modifier.weight(1f, fill = false), contentPadding = ScaledRowPadding, verticalArrangement = Arrangement.spacedBy(RowGap)) {
+            itemsIndexed(plan.ask, key = { _, entry -> entry.pkg }) { index, entry ->
+                val used = entry.pkg in keep
+                RespiroRow(
+                    ActionVariant.SECONDARY,
+                    onClick = { keep = if (used) keep - entry.pkg else keep + entry.pkg },
+                    modifier = if (index == 0) initialFocus() else Modifier,
+                ) {
+                    Text(entry.label, fontSize = RowLabelSize, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    AskChip(used, isUserApp = entry.pkg in userApps)
+                    Switch(checked = used, onCheckedChange = null, colors = switchColors())
+                }
+            }
         }
-    }
-    FocusedButton(stringResource(R.string.switch_off_now)) { onApply(keep) }
-}
-
-@Composable
-private fun Done(done: TvState.Done, onUndo: () -> Unit) {
-    Text(
-        pluralStringResource(R.plurals.switched_off, done.switchedOff, done.switchedOff),
-        color = Success,
-        fontSize = 32.sp,
-        fontWeight = FontWeight.SemiBold,
-    )
-    if (done.uninstalled > 0) {
-        Text(pluralStringResource(R.plurals.apps_uninstalled, done.uninstalled, done.uninstalled), color = Success, fontSize = 22.sp)
-    }
-    done.freedMb?.let { Text(stringResource(R.string.space_freed, it), color = Success, fontSize = 22.sp) }
-    Text(stringResource(R.string.last_step), color = Warning, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-    listOf(R.string.debug_step_1, R.string.debug_step_2, R.string.debug_step_3).forEachIndexed { index, step ->
-        Body("${index + 1}.  ${stringResource(step)}")
-    }
-    FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
-    // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(done.skipped, key = { it.first.pkg }) { (named, reason) -> Body("  ·  ${named.label}: ${skipReason(reason)}") }
+        val continueText = if (uninstalling == 0) stringResource(R.string.continue_count, switchingOff)
+        else stringResource(R.string.continue_count_uninstall, switchingOff, uninstalling)
+        val continueVariant = if (uninstalling == 0) ActionVariant.PRIMARY else ActionVariant.PERMANENT
+        ActionRow(continueText, continueVariant, { onApply(keep) })
     }
 }
 
 @Composable
-private fun Undo(packages: List<NamedPackage>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
-    Heading(stringResource(R.string.undo_title))
-    Body(stringResource(R.string.undo_help))
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        FocusedButton(stringResource(R.string.back), onBack)
-        if (packages.isNotEmpty()) Button(onClick = { onTurnBackOn(packages.map { it.pkg }) }) { Text(stringResource(R.string.turn_all_back_on)) }
+private fun AskChip(used: Boolean, isUserApp: Boolean) = when {
+    used -> Text(stringResource(R.string.chip_use), color = Air, fontSize = SmallSize)
+    isUserApp -> Text(stringResource(R.string.chip_uninstall), color = Amber, fontSize = SmallSize)
+    else -> Text(stringResource(R.string.chip_off), color = Muted, fontSize = SmallSize)
+}
+
+@Composable
+private fun switchColors() = SwitchDefaults.colors(
+    checkedThumbColor = OnAir,
+    checkedTrackColor = Air,
+    uncheckedThumbColor = Muted,
+    uncheckedTrackColor = Panel,
+)
+
+/** Switching off when [done] and [total] are known, turning back on otherwise. Nothing to press. */
+@Composable
+private fun Busy(deviceName: String, done: Int?, total: Int?) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            if (done != null && total != null) {
+                HeroNumber("$done / $total")
+                HeroLabel(stringResource(R.string.hero_applying))
+            } else {
+                HeroLabel(stringResource(R.string.working))
+            }
+        },
+    ) {
+        if (done != null && total != null && total > 0) ProgressBar(done.toFloat() / total)
+        Body(stringResource(R.string.dont_turn_off))
     }
-    if (packages.isEmpty()) Body(stringResource(R.string.nothing_switched_off))
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(packages, key = { it.pkg }) { named ->
-            ListItem(
-                selected = false,
-                onClick = { onTurnBackOn(listOf(named.pkg)) },
-                headlineContent = { Text(named.label) },
-                supportingContent = { Text(named.reason ?: named.pkg) },
-                trailingContent = { Text(stringResource(R.string.turn_back_on)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
+}
+
+@Composable
+private fun Done(deviceName: String, done: TvState.Done, onUndo: () -> Unit) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            HeroNumber("✓ ${done.switchedOff}")
+            HeroLabel(pluralStringResource(R.plurals.hero_switched_off, done.switchedOff))
+            if (done.uninstalled > 0) {
+                Body(pluralStringResource(R.plurals.apps_uninstalled, done.uninstalled, done.uninstalled), color = TextColor)
+            }
+            done.freedMb?.let { Body(stringResource(R.string.space_freed, it), color = TextColor) }
+        },
+    ) {
+        Text(stringResource(R.string.last_step), color = Amber, fontSize = BodySize, fontWeight = FontWeight.SemiBold)
+        NumberedSteps(listOf(R.string.debug_step_1, R.string.debug_step_2, R.string.debug_step_3).map { stringResource(it) })
+        ActionRow(stringResource(R.string.see_switched_off_all), ActionVariant.PRIMARY, onUndo, initialFocus())
+        // Skipped packages last and scrolling, so a long list can't push the steps or the button off screen.
+        LazyColumn {
+            items(done.skipped, key = { it.first.pkg }) { (named, reason) -> Small("·  ${named.label}: ${skipReason(reason)}") }
         }
     }
 }
@@ -341,16 +273,67 @@ private fun skipReason(reason: SkipReason): String = stringResource(
     },
 )
 
-/** A button that takes focus when its screen opens, so the remote always lands somewhere. */
 @Composable
-private fun FocusedButton(text: String, onClick: () -> Unit) {
-    val focus = remember { FocusRequester() }
-    Button(onClick = onClick, modifier = Modifier.focusRequester(focus)) { Text(text) }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+private fun Undo(deviceName: String, packages: List<NamedPackage>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            HeroNumber("${packages.size}")
+            HeroLabel(pluralStringResource(R.plurals.hero_switched_off, packages.size))
+            Small(stringResource(R.string.undo_help))
+        },
+    ) {
+        if (packages.isEmpty()) {
+            Body(stringResource(R.string.nothing_switched_off))
+            ActionRow(stringResource(R.string.back), ActionVariant.PRIMARY, onBack, initialFocus())
+            return@RespiroScaffold
+        }
+        LazyColumn(modifier = Modifier.weight(1f, fill = false), contentPadding = ScaledRowPadding, verticalArrangement = Arrangement.spacedBy(RowGap)) {
+            itemsIndexed(packages, key = { _, named -> named.pkg }) { index, named ->
+                // Turning back on is reversible, so the first row may take focus.
+                UndoRow(named, { onTurnBackOn(listOf(named.pkg)) }, if (index == 0) initialFocus() else Modifier)
+            }
+        }
+        ActionRow(stringResource(R.string.turn_all_back_on), ActionVariant.SECONDARY, { onTurnBackOn(packages.map { it.pkg }) })
+    }
 }
 
 @Composable
-private fun Heading(text: String) = Text(text, color = TextColor, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+private fun UndoRow(named: NamedPackage, onClick: () -> Unit, modifier: Modifier) {
+    RespiroRow(ActionVariant.SECONDARY, onClick, modifier) { focused ->
+        Column(Modifier.weight(1f)) {
+            Text(named.label, fontSize = RowLabelSize, fontWeight = FontWeight.Medium)
+            Small(named.reason ?: named.pkg, maxLines = 1)
+        }
+        if (focused) Text(stringResource(R.string.turn_back_on) + " ▸", color = Air, fontSize = SmallSize)
+    }
+}
 
 @Composable
-private fun Body(text: String) = Text(text, color = Muted, fontSize = 18.sp)
+private fun SpaceFreed(deviceName: String, freedMb: Long?, onBack: () -> Unit) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            HeroNumber(if (freedMb != null) stringResource(R.string.hero_freed_mb, freedMb) else "✓")
+            HeroLabel(stringResource(R.string.caches_cleared))
+        },
+    ) {
+        Body(stringResource(R.string.caches_help))
+        ActionRow(stringResource(R.string.back), ActionVariant.PRIMARY, onBack, initialFocus())
+    }
+}
+
+@Composable
+private fun ReportSaved(deviceName: String, path: String, onBack: () -> Unit) {
+    RespiroScaffold(
+        deviceName,
+        hero = {
+            HeroNumber("✓")
+            HeroLabel(stringResource(R.string.report_saved_title))
+        },
+    ) {
+        MonospacePanel(path.removePrefix("/sdcard/"))
+        Body(stringResource(R.string.report_saved_help))
+        ActionRow(stringResource(R.string.back), ActionVariant.PRIMARY, onBack, initialFocus())
+    }
+}
