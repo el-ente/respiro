@@ -62,6 +62,9 @@ sealed interface TvState {
 
     data class ConfirmUninstall(val app: InstalledApp) : TvState
 
+    /** Caches cleared; [freedMb] is null when the TV didn't report its free space. */
+    data class SpaceFreed(val freedMb: Long?) : TvState
+
     /** The device report was saved to [path] on the TV. */
     data class ReportSaved(val path: String) : TvState
 
@@ -175,6 +178,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         return Uninstaller(shell, selfPackage).removable()
             .map { InstalledApp(names.describe(it), names.icon(it, ICON_PX), sizes[it] ?: 0) }
             .sortedByDescending { it.bytes }
+    }
+
+    fun freeSpace() = onTv(TvState.Working) { shell ->
+        val before = Storage.freeKb(shell)
+        Storage.clearCaches(shell)
+        TvState.SpaceFreed(freedMb(before, Storage.freeKb(shell)))
     }
 
     fun openUndo() {

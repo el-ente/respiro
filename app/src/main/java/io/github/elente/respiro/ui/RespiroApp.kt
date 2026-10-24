@@ -57,7 +57,9 @@ fun RespiroApp(vm: MainViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     // Back steps out of the uninstall screens and lists; on the plan it leaves Respiro as usual.
     BackHandler(enabled = state is TvState.ConfirmUninstall) { vm.cancelUninstall() }
-    BackHandler(enabled = state is TvState.Installed || state is TvState.Undo || state is TvState.ReportSaved) { vm.inspect() }
+    BackHandler(
+        enabled = state is TvState.Installed || state is TvState.Undo || state is TvState.ReportSaved || state is TvState.SpaceFreed,
+    ) { vm.inspect() }
     MaterialTheme(colorScheme = darkColorScheme()) {
         Column(
             modifier = Modifier
@@ -75,9 +77,11 @@ fun RespiroApp(vm: MainViewModel) {
                     onStart = { vm.ask(current.plan, current.userApps) },
                     onUndo = vm::openUndo,
                     onUninstall = vm::openInstalled,
+                    onFreeSpace = vm::freeSpace,
                     onReport = { vm.saveReport(current.props) },
                 )
                 is TvState.Installed -> Installed(current, onPick = vm::askUninstall)
+                is TvState.SpaceFreed -> SpaceFreed(current.freedMb, onBack = vm::inspect)
                 is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
                 is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
                 is TvState.Asking -> Asking(current.plan, current.userApps, onApply = { keep -> vm.apply(current.plan, keep, current.userApps) })
@@ -105,7 +109,14 @@ private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit, onUninstall: () -> Unit, onReport: () -> Unit) {
+private fun Ready(
+    ready: TvState.Ready,
+    onStart: () -> Unit,
+    onUndo: () -> Unit,
+    onUninstall: () -> Unit,
+    onFreeSpace: () -> Unit,
+    onReport: () -> Unit,
+) {
     val plan = ready.plan
     val model = plan.model
     if (model != null) {
@@ -127,6 +138,7 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
         // Never the default focus: uninstalling can't be undone.
         if (ready.removable > 0) Button(onClick = onUninstall) { Text(stringResource(R.string.uninstall_apps, ready.removable)) }
+        Button(onClick = onFreeSpace) { Text(stringResource(R.string.free_space)) }
         Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
     }
     if (plan.disable.isEmpty() && plan.ask.isEmpty()) Body(stringResource(R.string.already_clean))
@@ -185,6 +197,18 @@ private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Un
         }
     }
     LaunchedEffect(installed) { runCatching { firstRow.requestFocus() } }
+}
+
+@Composable
+private fun SpaceFreed(freedMb: Long?, onBack: () -> Unit) {
+    Text(
+        if (freedMb != null) stringResource(R.string.space_freed, freedMb) else stringResource(R.string.caches_cleared),
+        color = Success,
+        fontSize = 32.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    Body(stringResource(R.string.caches_help))
+    FocusedButton(stringResource(R.string.back), onBack)
 }
 
 /** Cancel comes first and takes focus, so pressing OK twice by mistake removes nothing. */

@@ -74,4 +74,7 @@
     <string name="uninstall_confirm_body">This removes the app and its data (%1$s). You can install it again from the Play Store, but you\'ll need to sign in again.</string>
     <string name="uninstall">Uninstall</string>
     <string name="cancel">Cancel</string>
+    <string name="free_space">Free up space</string>
+    <string name="caches_cleared">Caches cleared.</string>
+    <string name="caches_help">Apps keep their data and settings; they rebuild their caches as they need them.</string>
 </resources>
