@@ -33,8 +33,19 @@ import java.io.File
 /** An app the user installed, as the uninstall list shows it. */
 data class InstalledApp(val named: NamedPackage, val icon: ImageBitmap?, val bytes: Long)
 
-/** What the last uninstall did: [totalBytes] adds up everything uninstalled this session. */
-data class UninstallResult(val label: String, val removed: Boolean, val bytes: Long, val totalBytes: Long)
+/** What the last action on the apps screen did. */
+sealed interface AppsResult {
+    val label: String
+
+    /** [totalBytes] adds up everything uninstalled this session. */
+    data class Uninstalled(override val label: String, val bytes: Long, val totalBytes: Long) : AppsResult
+
+    data class UninstallFailed(override val label: String) : AppsResult
+
+    data class TurnedOn(override val label: String) : AppsResult
+
+    data class TurnOnFailed(override val label: String) : AppsResult
+}
 
 /** Where Respiro stands with this TV. */
 sealed interface TvState {
@@ -57,8 +68,11 @@ sealed interface TvState {
         val model: String get() = props[Getprop.MODEL].orEmpty()
     }
 
-    /** Apps the user installed, biggest first; [result] says what the last uninstall did. */
-    data class Installed(val apps: List<InstalledApp>, val result: UninstallResult?) : TvState
+    /**
+     * The apps screen: apps the user installed, biggest first, to uninstall; and the apps Respiro switched off, to
+     * turn back on. Never apps switched off by anyone else. [result] says what the last action did.
+     */
+    data class Installed(val apps: List<InstalledApp>, val switchedOff: List<InstalledApp>, val result: AppsResult?) : TvState
 
     data class ConfirmUninstall(val app: InstalledApp) : TvState
 
@@ -156,7 +170,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         TvState.ReportSaved(path)
     }
 
-    fun openInstalled() = onTv(TvState.Working) { shell -> TvState.Installed(installedApps(shell), result = null) }
+    fun openInstalled() = onTv(TvState.Working) { shell -> appsScreen(shell, result = null) }
 
     fun askUninstall(app: InstalledApp) {
         _state.value = TvState.ConfirmUninstall(app)
@@ -170,14 +184,25 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun uninstall(app: InstalledApp) = onTv(TvState.Working) { shell ->
         val removed = Uninstaller(shell, selfPackage).uninstall(app.named.pkg)
         if (removed) freedByUninstall += app.bytes
-        TvState.Installed(installedApps(shell), UninstallResult(app.named.label, removed, app.bytes, freedByUninstall))
+        val label = app.named.label
+        appsScreen(shell, if (removed) AppsResult.Uninstalled(label, app.bytes, freedByUninstall) else AppsResult.UninstallFailed(label))
     }
 
-    private fun installedApps(shell: io.github.elente.respiro.adb.Shell): List<InstalledApp> {
+    /** Only for packages Respiro switched off: the change log is the whole list. */
+    fun turnOn(app: InstalledApp) = onTv(TvState.Working) { shell ->
+        val label = app.named.label
+        val on = app.named.pkg in log.all() && Debloater(shell, log).enable(app.named.pkg)
+        appsScreen(shell, if (on) AppsResult.TurnedOn(label) else AppsResult.TurnOnFailed(label))
+    }
+
+    private fun appsScreen(shell: io.github.elente.respiro.adb.Shell, result: AppsResult?): TvState.Installed {
         val sizes = Storage.appSizes(shell)
-        return Uninstaller(shell, selfPackage).removable()
-            .map { InstalledApp(names.describe(it), names.icon(it, ICON_PX), sizes[it] ?: 0) }
-            .sortedByDescending { it.bytes }
+        val describe = { pkg: String -> InstalledApp(names.describe(pkg), names.icon(pkg, ICON_PX), sizes[pkg] ?: 0) }
+        return TvState.Installed(
+            apps = Uninstaller(shell, selfPackage).removable().map(describe).sortedByDescending { it.bytes },
+            switchedOff = log.all().map(describe),
+            result = result,
+        )
     }
 
     fun freeSpace() = onTv(TvState.Working) { shell ->

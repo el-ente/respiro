@@ -54,14 +54,14 @@
     <string name="debug_step_1">Open Settings › Device Preferences › Developer options.</string>
     <string name="debug_step_2">Turn off USB debugging, and Network debugging if your TV has it.</string>
     <string name="debug_step_3">Respiro will ask to allow debugging again next time; that\'s normal.</string>
-    <string name="uninstall_apps">Uninstall apps (%1$d)</string>
+    <string name="uninstall_apps">Your apps (%1$d)</string>
     <string name="will_uninstall">Will be uninstalled · %1$s</string>
     <string name="i_dont_use_it_uninstall">I don\'t use it: uninstall it</string>
     <plurals name="apps_uninstalled">
         <item quantity="one">%1$d app you installed was uninstalled</item>
         <item quantity="other">%1$d apps you installed were uninstalled</item>
     </plurals>
-    <string name="installed_title">Apps you installed</string>
+    <string name="installed_title">Your apps</string>
     <plurals name="installed_summary">
         <item quantity="one">%1$d app · %2$s. Pick it to uninstall it.</item>
         <item quantity="other">%1$d apps · %2$s in total. Pick one to uninstall.</item>
@@ -77,4 +77,8 @@
     <string name="free_space">Free up space</string>
     <string name="caches_cleared">Caches cleared.</string>
     <string name="caches_help">Apps keep their data and settings; they rebuild their caches as they need them.</string>
+    <string name="switched_off_section">Switched off by Respiro</string>
+    <string name="switched_off_row">Off · OK to turn it back on</string>
+    <string name="turned_on_result">%1$s is on again</string>
+    <string name="turn_on_failed">Couldn\'t turn on %1$s.</string>
 </resources>
