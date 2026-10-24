@@ -97,7 +97,10 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit)
     groupCounts(plan).forEach { (group, count) -> Body("  ·  $group: $count") }
     Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        if (plan.disable.isNotEmpty() || plan.ask.isNotEmpty()) FocusedButton(stringResource(R.string.start), onStart)
+        when {
+            plan.disable.isNotEmpty() -> FocusedButton(stringResource(R.string.start), onStart)
+            plan.ask.isNotEmpty() -> FocusedButton(stringResource(R.string.switch_off_now), onStart)
+        }
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
     }
 }
