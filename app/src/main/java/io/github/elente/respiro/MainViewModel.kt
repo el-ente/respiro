@@ -14,6 +14,7 @@ import io.github.elente.respiro.debloat.ChangeLog
 import io.github.elente.respiro.debloat.Debloater
 import io.github.elente.respiro.debloat.Outcome
 import io.github.elente.respiro.debloat.SkipReason
+import io.github.elente.respiro.debloat.Storage
 import io.github.elente.respiro.debloat.TvPackages
 import io.github.elente.respiro.debloat.forTv
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +41,8 @@ sealed interface TvState {
     /** Turning things back on. */
     data object Working : TvState
 
-    data class Done(val switchedOff: Int, val skipped: List<Pair<NamedPackage, SkipReason>>) : TvState
+    /** [freedMb] is null when the TV didn't report its free space. */
+    data class Done(val switchedOff: Int, val skipped: List<Pair<NamedPackage, SkipReason>>, val freedMb: Long?) : TvState
 
     /** Everything Respiro switched off, to turn back on. */
     data class Undo(val packages: List<NamedPackage>) : TvState
@@ -77,10 +79,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val packages = plan.disable.map { it.pkg } + plan.ask.map { it.pkg }.filter { it !in keepUsing }
         onTv(TvState.Applying(0, packages.size)) { shell ->
             Backup.save(shell, backups, System.currentTimeMillis())
+            val freeBefore = Storage.freeKb(shell)
             val outcomes = Debloater(shell, log).disable(packages) { done, total -> _state.value = TvState.Applying(done, total) }
             TvState.Done(
                 switchedOff = outcomes.count { it is Outcome.Disabled },
                 skipped = outcomes.filterIsInstance<Outcome.Skipped>().map { names.describe(it.pkg) to it.reason },
+                freedMb = freedMb(freeBefore, Storage.freeKb(shell)),
             )
         }
     }
@@ -96,6 +100,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         undoList()
     }
 
+    private fun freedMb(beforeKb: Long?, afterKb: Long?): Long? =
+        if (beforeKb == null || afterKb == null) null else ((afterKb - beforeKb) / KB_PER_MB).coerceAtLeast(0)
+
     private fun undoList() = TvState.Undo(log.all().map(names::describe))
 
     private fun onTv(busy: TvState, work: (io.github.elente.respiro.adb.Shell) -> TvState) {
@@ -110,5 +117,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private companion object {
         const val MANUFACTURER = "ro.product.manufacturer"
         const val MODEL = "ro.product.model"
+        const val KB_PER_MB = 1024
     }
 }

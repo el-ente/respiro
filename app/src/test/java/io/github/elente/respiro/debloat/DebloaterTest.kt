@@ -25,11 +25,37 @@ class DebloaterTest {
     }
 
     @Test
+    fun `gives back a preinstalled app's space only after it is off`() {
+        val tv = FakeTv(installed = setOf("com.tcl.a"))
+        Debloater(tv, log()).disable(listOf("com.tcl.a"))
+        val sequence = tv.commands.filter { it.endsWith(" com.tcl.a") }
+        assertEquals(
+            listOf("pm disable-user --user 0 com.tcl.a", "pm uninstall-system-updates com.tcl.a", "pm clear --user 0 com.tcl.a"),
+            sequence,
+        )
+    }
+
+    @Test
+    fun `never clears an app the user installed`() {
+        val tv = FakeTv(installed = setOf("com.netflix.ninja"), preinstalled = emptySet())
+        Debloater(tv, log()).disable(listOf("com.netflix.ninja"))
+        assertTrue("com.netflix.ninja" in tv.disabled)
+        assertTrue(tv.commands.none { it.startsWith("pm clear") || it.startsWith("pm uninstall") })
+    }
+
+    @Test
+    fun `an app Android won't disable keeps its updates and data`() {
+        val tv = FakeTv(installed = setOf("com.tcl.a"), refuses = setOf("com.tcl.a"))
+        Debloater(tv, log()).disable(listOf("com.tcl.a"))
+        assertTrue(tv.commands.none { it.startsWith("pm clear") || it.startsWith("pm uninstall") })
+    }
+
+    @Test
     fun `never touches a protected package or a malformed name`() {
         val tv = FakeTv(installed = setOf("com.android.systemui"))
         val outcomes = Debloater(tv, log()).disable(listOf("com.android.systemui", "x;reboot"))
         assertTrue(outcomes.all { it is Outcome.Skipped && it.reason == SkipReason.PROTECTED })
-        assertTrue(tv.commands.none { it.startsWith("pm disable-user") })
+        assertTrue(tv.commands.none { it.startsWith("pm disable-user") || it.startsWith("pm clear") || it.startsWith("pm uninstall") })
     }
 
     @Test
@@ -72,7 +98,8 @@ class DebloaterTest {
     @Test
     fun `checks the TV after every batch of five`() {
         val packages = (1..7).map { "com.tcl.p$it" }
-        val tv = FakeTv(installed = packages.toSet())
+        // Not preinstalled, so the only disabled-list reads are the batch checks.
+        val tv = FakeTv(installed = packages.toSet(), preinstalled = emptySet())
         Debloater(tv, log()).disable(packages)
         assertEquals(2, tv.commands.count { it == "pm list packages -d" })
     }

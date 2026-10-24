@@ -120,6 +120,7 @@ private fun Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
 @Composable
 private fun Done(done: TvState.Done, onUndo: () -> Unit) {
     Heading(pluralStringResource(R.plurals.switched_off, done.switchedOff, done.switchedOff))
+    done.freedMb?.let { Body(stringResource(R.string.space_freed, it)) }
     Body(stringResource(R.string.turn_debugging_off))
     FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
     // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
@@ -131,6 +132,7 @@ private fun Done(done: TvState.Done, onUndo: () -> Unit) {
 @Composable
 private fun Undo(packages: List<NamedPackage>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
     Heading(stringResource(R.string.undo_title))
+    Body(stringResource(R.string.undo_help))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         FocusedButton(stringResource(R.string.back), onBack)
         if (packages.isNotEmpty()) Button(onClick = { onTurnBackOn(packages.map { it.pkg }) }) { Text(stringResource(R.string.turn_all_back_on)) }

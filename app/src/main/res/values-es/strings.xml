@@ -41,4 +41,6 @@
     <string name="skip_refused">Android no lo permitió</string>
     <string name="working">Volviendo a encender…</string>
     <string name="debugging_reminder">Cuando termines con Respiro, vuelve a desactivar la depuración por USB y por red en Ajustes › Opciones para desarrolladores.</string>
+    <string name="space_freed">Se liberaron %1$d MB de almacenamiento.</string>
+    <string name="undo_help">Una app que vuelves a encender regresa como vino de fábrica; Play Store la vuelve a actualizar.</string>
 </resources>

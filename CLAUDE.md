@@ -6,8 +6,12 @@ Android TV app that debloats the TV it runs on, over the TV's own ADB, using a b
 
 These come from debloating real TVs. Breaking one can leave a TV that doesn't boot or can't reach the network.
 
-- **Disable, never uninstall.** Only `pm disable-user --user 0`. No `pm uninstall`, no root, nothing flashed.
-  Every change must be recorded and reversible from the app.
+- **Disable, never uninstall.** Switch packages off with `pm disable-user --user 0`. No `pm uninstall`, no root,
+  nothing flashed. Every change must be recorded and reversible from the app.
+- **Recovering space is allowed only for preinstalled packages Respiro switched off:** once one is confirmed off, it
+  may remove the app's updates (`pm uninstall-system-updates`, the factory version stays) and clear its data
+  (`pm clear`), then confirm it is still off. Turning it back on gives the factory version. Never for a kept,
+  protected or user-installed app, and never before the disable succeeded.
 - **Back up first.** Save the package list, the disabled list and the relevant settings before the first change.
 - **Never disable Android's core packages:** the permission controller, package installer, ext services/shared,
   module metadata (`com.android.*` and `com.google.android.*`), `com.google.android.overlay.modules*`,
