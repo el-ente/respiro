@@ -42,6 +42,38 @@ class DeviceDatabaseTest {
     }
 
     @Test
+    fun `every package is a clean package name`() {
+        database.files.forEach { file ->
+            (file.packages + file.neverStart).forEach {
+                assertTrue("${file.id} has a malformed package '$it'", ProtectedPackages.isValidName(it))
+            }
+        }
+    }
+
+    @Test
+    fun `models can't take a layer's id and always match the device`() {
+        database.files.filter { it.isModel }.forEach { model ->
+            assertFalse("${model.id} uses a layer id", model.id.startsWith("common/") || model.id.startsWith("vendors/"))
+            assertTrue("${model.id} doesn't match ro.product.device", "ro.product.device" in model.match)
+        }
+        val models = database.files.filter { it.isModel }
+        models.forEach { a ->
+            models.filter { b -> b !== a && b.match.size == a.match.size }.forEach { b ->
+                val shared = a.match.keys intersect b.match.keys
+                assertFalse("${a.id} and ${b.id} could both fit one TV", shared.all { a.match[it] == b.match[it] })
+            }
+        }
+    }
+
+    @Test
+    fun `two equally specific models that both fit make the TV unknown`() {
+        val a = DeviceFile(id = "acme/a", name = "A", match = mapOf("ro.product.device" to "one", "ro.product.name" to "x"))
+        val b = DeviceFile(id = "acme/b", name = "B", match = mapOf("ro.product.device" to "one", "ro.product.model" to "y"))
+        val props = mapOf("ro.product.device" to "one", "ro.product.name" to "x", "ro.product.model" to "y")
+        assertNull(DeviceDatabase(listOf(a, b)).match(props))
+    }
+
+    @Test
     fun `no file names a package twice`() {
         database.files.forEach { file ->
             val repeated = file.packages.groupBy { it }.filterValues { it.size > 1 }.keys
@@ -78,6 +110,30 @@ class DeviceDatabaseTest {
         assertTrue("com.google.android.feedback" in disabled)
         assertTrue(disabled.none { it in plan.keep })
         assertTrue("com.tcl.tv" in plan.keep)
+    }
+
+    @Test
+    fun `a package disabled by one layer and asked about by another is asked about`() {
+        val common = DeviceFile(
+            id = "common/google-tv",
+            name = "common",
+            disable = listOf(DisableEntry("com.example.music", "preloaded", "")),
+        )
+        val model = DeviceFile(
+            id = "acme/one",
+            name = "Acme One",
+            match = mapOf("ro.product.device" to "one"),
+            extends = listOf("common/google-tv"),
+            ask = listOf(AskEntry("com.example.music", "streaming", "Music")),
+        )
+        val plan = DeviceDatabase(listOf(common, model)).plan(model)
+        assertTrue(plan.disable.isEmpty())
+        assertEquals(listOf("com.example.music"), plan.ask.map { it.pkg })
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `two files with the same id are rejected`() {
+        DeviceDatabase(listOf(DeviceFile(id = "vendors/tcl", name = "a"), DeviceFile(id = "vendors/tcl", name = "b")))
     }
 
     @Test
