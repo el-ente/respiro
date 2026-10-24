@@ -49,6 +49,11 @@ These come from debloating real TVs. Breaking one can leave a TV that doesn't bo
 6. Always commit: commit and push right after every finished change, however small. Never leave finished work
    uncommitted.
 
+## Releases
+
+- Push a tag `vX.Y.Z` on `main`: CI tests, builds and publishes the release with `respiro.apk`, which the README's
+  install link points to. Bump `versionCode` and `versionName` first.
+
 ## Testing on a TV
 
 - Use a release build: debug builds of a Compose app start several times slower on a 1 GB TV.

@@ -19,10 +19,24 @@ android {
         versionName = "0.0.1"
     }
 
+    signingConfigs {
+        // Development key committed on purpose, as in Daiji: every build, local or CI, can update the last one, so
+        // Respiro keeps its ADB key and the TV doesn't ask to allow debugging again. Replace before publishing to a store.
+        create("dev") {
+            storeFile = file("dev.keystore")
+            storePassword = "respiro-dev"
+            keyAlias = "respiro"
+            keyPassword = "respiro-dev"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("dev")
+        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("dev")
         }
     }
 

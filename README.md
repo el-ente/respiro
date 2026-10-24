@@ -31,6 +31,16 @@ Each one is a file in [`app/src/main/assets/devices/`](app/src/main/assets/devic
 TV's preinstalled packages (never serial numbers or the apps you installed). Attach it to an issue, or turn it into a
 pull request; that folder's README describes the format.
 
+## Install
+
+On the TV, install **Downloader** (by AFTVnews) from the Play Store, open it and enter:
+
+```
+https://github.com/el-ente/respiro/releases/latest/download/respiro.apk
+```
+
+Allow Downloader to install apps when Android asks, then open Respiro from your apps.
+
 ## Before you start
 
 ADB must be on:
