@@ -175,7 +175,10 @@ private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Un
         Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
     }
     val firstRow = remember { FocusRequester() }
-    val first = installed.apps.firstOrNull() ?: installed.switchedOff.firstOrNull()
+    // After a turn-on, stay in the switched-off section so the next OK can't open an uninstall by surprise.
+    val afterTurnOn = installed.result is AppsResult.TurnedOn || installed.result is AppsResult.TurnOnFailed
+    val first = if (afterTurnOn) installed.switchedOff.firstOrNull() ?: installed.apps.firstOrNull()
+    else installed.apps.firstOrNull() ?: installed.switchedOff.firstOrNull()
     val focusFirst = { app: InstalledApp -> if (app == first) Modifier.focusRequester(firstRow) else Modifier }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         items(installed.apps, key = { "installed:" + it.named.pkg }) { app ->
