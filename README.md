@@ -26,8 +26,10 @@ preinstalled (telemetry, ads, promo rows, duplicate services) and switches it of
 | TCL 43" Smart TV (C06_2K_GB) | 11 | 2026-10-24 |
 | Flow SoundBox (Sagemcom, Telecom Argentina) | 11 | 2026-10-24 |
 
-Each one is a file in [`app/src/main/assets/devices/`](app/src/main/assets/devices/README.md). To add yours, open a
-pull request with a new model file; that folder's README describes the format.
+Each one is a file in [`app/src/main/assets/devices/`](app/src/main/assets/devices/README.md). To add yours, choose
+**Save device report** in Respiro: it writes `Download/respiro-<device>.txt` with a model file to start from and the
+TV's preinstalled packages (never serial numbers or the apps you installed). Attach it to an issue, or turn it into a
+pull request; that folder's README describes the format.
 
 ## Before you start
 

@@ -58,7 +58,13 @@ fun RespiroApp(vm: MainViewModel) {
             when (val current = state) {
                 TvState.Connecting -> Body(stringResource(R.string.connecting))
                 is TvState.Failed -> Failed(current, onRetry = vm::inspect)
-                is TvState.Ready -> Ready(current, onStart = { vm.ask(current.plan) }, onUndo = vm::openUndo)
+                is TvState.Ready -> Ready(
+                    current,
+                    onStart = { vm.ask(current.plan) },
+                    onUndo = vm::openUndo,
+                    onReport = { vm.saveReport(current.props) },
+                )
+                is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
                 is TvState.Asking -> Asking(current.plan, onApply = { keep -> vm.apply(current.plan, keep) })
                 is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
                 TvState.Working -> Body(stringResource(R.string.working))
@@ -84,7 +90,7 @@ private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit) {
+private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit, onReport: () -> Unit) {
     val plan = ready.plan
     val model = plan.model
     if (model != null) {
@@ -102,7 +108,15 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit)
             plan.ask.isNotEmpty() -> FocusedButton(stringResource(R.string.switch_off_now), onStart)
         }
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
+        Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
     }
+}
+
+@Composable
+private fun ReportSaved(path: String, onBack: () -> Unit) {
+    Heading(stringResource(R.string.report_saved_title))
+    Body(stringResource(R.string.report_saved_help, path.removePrefix("/sdcard/")))
+    FocusedButton(stringResource(R.string.back), onBack)
 }
 
 /** One switch per app Respiro asks about; on means "I use it, leave it". */
