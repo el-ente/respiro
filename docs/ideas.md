@@ -31,10 +31,25 @@ Not planned yet. Move an idea to specs.md when it's decided.
   and remove the ones they pick. Preinstalled packages stay disable-only, as the safety rules require.
 - **Clear cache**, any time: trim every app's cache (`pm trim-caches`) and clear the data of apps Respiro switched
   off, showing the space freed. On the TCL this took free storage from 704 MB to 955 MB.
+- **Startup apps**: list the apps that start at boot (`BOOT_COMPLETED` receivers) and stop the ones not needed.
+- **Auto-update off**: stop the Play Store from updating preinstalled bloat back to life.
+- **Storage report**: what takes the space (apps, data, cache, downloads), before deciding what to clear.
+
+## Maintenance
+
+- **Scheduled restart**: a weekly restart at night, for 1 GB TVs that slow down after days on.
+- **Health check**: free RAM, free storage and firmware age, summed up as a simple score.
+
+## TV settings
+
+- **Picture fixes**: turn off motion smoothing and eco dimming through known settings keys, per model in the
+  database. Vendor-specific and untested; only with keys verified on a real TV.
 
 ## Experience
 
 - **Explain each package** in plain words, with "what you lose if you switch it off".
 - **Presets**: Minimal (only telemetry and ads), Recommended, Maximum.
 - **A short "how to turn on debugging" video or illustrated guide** per brand (menus differ).
+- **Kids mode**: switch chosen apps off behind a PIN, so they disappear from the TV until a parent turns them back
+  on. Respiro isn't a launcher, so it hides apps by disabling them, not by changing Home.
 - **Share link to Daiji** for people who also want a cleaner home screen.
