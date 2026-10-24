@@ -62,7 +62,10 @@
         <item quantity="other">%1$d apps you installed were uninstalled</item>
     </plurals>
     <string name="installed_title">Apps you installed</string>
-    <string name="installed_summary">%1$d apps · %2$s in total. Pick one to uninstall.</string>
+    <plurals name="installed_summary">
+        <item quantity="one">%1$d app · %2$s. Pick it to uninstall it.</item>
+        <item quantity="other">%1$d apps · %2$s in total. Pick one to uninstall.</item>
+    </plurals>
     <string name="installed_empty">No apps installed by you. Nothing to uninstall.</string>
     <string name="uninstalled_result">%1$s uninstalled · %2$s freed</string>
     <string name="uninstalled_total">%1$s freed in total</string>

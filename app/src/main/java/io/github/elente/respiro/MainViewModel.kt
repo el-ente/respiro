@@ -120,16 +120,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun ask(plan: DebloatPlan, userApps: Set<String>) {
-        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet()) else _state.value = TvState.Asking(plan, userApps)
+        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet(), userApps) else _state.value = TvState.Asking(plan, userApps)
     }
 
     /** Switches off the plan's list plus every asked-about app the user didn't tick, after a backup. */
-    fun apply(plan: DebloatPlan, keepUsing: Set<String>) {
+    fun apply(plan: DebloatPlan, keepUsing: Set<String>, userApps: Set<String>) {
         val packages = plan.disable.map { it.pkg } + plan.ask.map { it.pkg }.filter { it !in keepUsing }
         onTv(TvState.Applying(0, packages.size)) { shell ->
             Backup.save(shell, backups, System.currentTimeMillis())
             val freeBefore = Storage.freeKb(shell)
-            val outcomes = Debloater(shell, log).disable(packages) { done, total -> _state.value = TvState.Applying(done, total) }
+            val debloater = Debloater(shell, log, Uninstaller(shell, selfPackage))
+            val outcomes = debloater.disable(packages, userApps) { done, total -> _state.value = TvState.Applying(done, total) }
             TvState.Done(
                 switchedOff = outcomes.count { it is Outcome.Disabled },
                 uninstalled = outcomes.count { it is Outcome.Uninstalled },

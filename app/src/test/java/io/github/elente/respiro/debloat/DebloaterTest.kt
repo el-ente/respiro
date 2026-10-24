@@ -39,10 +39,20 @@ class DebloaterTest {
     fun `uninstalls an app the user installed instead of switching it off, and keeps it out of undo`() {
         val tv = FakeTv(installed = setOf("com.netflix.ninja"), preinstalled = emptySet())
         val log = log()
-        val outcomes = Debloater(tv, log).disable(listOf("com.netflix.ninja"))
+        val debloater = Debloater(tv, log, Uninstaller(tv, "io.github.elente.respiro"))
+        val outcomes = debloater.disable(listOf("com.netflix.ninja"), userApps = setOf("com.netflix.ninja"))
         assertEquals(listOf(Outcome.Uninstalled("com.netflix.ninja")), outcomes)
         assertTrue(tv.commands.none { it.startsWith("pm disable-user") || it.startsWith("pm clear") })
         assertTrue(log.all().isEmpty())
+    }
+
+    @Test
+    fun `a package the user wasn't told would be uninstalled is never uninstalled`() {
+        // An empty preinstalled list must not turn everything into a user app.
+        val tv = FakeTv(installed = setOf("com.tcl.a"), preinstalled = emptySet())
+        val outcomes = Debloater(tv, log(), Uninstaller(tv, "io.github.elente.respiro")).disable(listOf("com.tcl.a"))
+        assertEquals(listOf(Outcome.Disabled("com.tcl.a")), outcomes)
+        assertTrue(tv.commands.none { it.startsWith("pm uninstall ") })
     }
 
     @Test

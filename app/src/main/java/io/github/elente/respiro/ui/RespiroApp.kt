@@ -80,7 +80,7 @@ fun RespiroApp(vm: MainViewModel) {
                 is TvState.Installed -> Installed(current, onPick = vm::askUninstall)
                 is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
                 is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
-                is TvState.Asking -> Asking(current.plan, current.userApps, onApply = { keep -> vm.apply(current.plan, keep) })
+                is TvState.Asking -> Asking(current.plan, current.userApps, onApply = { keep -> vm.apply(current.plan, keep, current.userApps) })
                 is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
                 TvState.Working -> Body(stringResource(R.string.working))
                 is TvState.Done -> Done(current, onUndo = vm::openUndo)
@@ -168,7 +168,7 @@ private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Un
         Body(stringResource(R.string.installed_empty))
         return
     }
-    Body(stringResource(R.string.installed_summary, installed.apps.size, Formatter.formatShortFileSize(context, total)))
+    Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
     val firstRow = remember { FocusRequester() }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         items(installed.apps, key = { it.named.pkg }) { app ->

@@ -33,15 +33,23 @@ enum class SkipReason {
  * removes its updates (the factory version stays) and clears its data. It never uninstalls an app, and never touches
  * the data of an app the user installed.
  */
-class Debloater(private val shell: Shell, private val log: ChangeLog) {
+class Debloater(private val shell: Shell, private val log: ChangeLog, private val uninstaller: Uninstaller? = null) {
 
-    fun disable(packages: List<String>, onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): List<Outcome> {
+    /**
+     * [userApps] are the packages the user saw named "will be uninstalled": only those are uninstalled, and only if
+     * [uninstaller] still finds them removable. Everything else is switched off, whatever the TV's lists say.
+     */
+    fun disable(
+        packages: List<String>,
+        userApps: Set<String> = emptySet(),
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+    ): List<Outcome> {
         val wifiOwners = wifiOwners()
         val preinstalled = TvPackages.parse(shell.run("pm list packages -s"))
         val outcomes = mutableListOf<Outcome>()
         packages.chunked(BATCH_SIZE).forEach { batch ->
             val batchOutcomes = batch.mapIndexed { index, pkg ->
-                disableOne(pkg, wifiOwners, preinstalled).also { onProgress(outcomes.size + index + 1, packages.size) }
+                disableOne(pkg, wifiOwners, preinstalled, userApps).also { onProgress(outcomes.size + index + 1, packages.size) }
             }
             outcomes += confirm(batchOutcomes)
         }
@@ -56,10 +64,10 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         return enabled
     }
 
-    private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>): Outcome {
+    private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>, userApps: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
-        if (pkg !in preinstalled) return uninstall(pkg)
+        if (pkg in userApps) return uninstall(pkg)
         // Recorded before any command: if the connection drops after pm ran, undo still knows about it.
         log.add(pkg)
         if (!switchOff(pkg)) {
@@ -75,7 +83,7 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
     }
 
     private fun uninstall(pkg: String): Outcome =
-        if (shell.run("pm uninstall $pkg").trim() == "Success") Outcome.Uninstalled(pkg) else Outcome.Skipped(pkg, SkipReason.REFUSED)
+        if (uninstaller?.uninstall(pkg) == true) Outcome.Uninstalled(pkg) else Outcome.Skipped(pkg, SkipReason.REFUSED)
 
     private fun switchOff(pkg: String): Boolean =
         shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")

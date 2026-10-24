@@ -18,6 +18,25 @@ class UninstallerTest {
     }
 
     @Test
+    fun `never offers the keyboard or an accessibility service in use`() {
+        val tv = FakeTv(
+            installed = setOf("com.stremio.one", "com.keys.helper", "com.board.ime"),
+            preinstalled = emptySet(),
+            secureSettings = mapOf(
+                "enabled_accessibility_services" to "com.urbandroid.lux/.Twilight:com.keys.helper/.KeyService",
+                "default_input_method" to "com.board.ime/.Ime",
+            ),
+        )
+        assertEquals(setOf("com.stremio.one"), Uninstaller(tv, self).removable())
+    }
+
+    @Test
+    fun `offers nothing when the home screens can't be read`() {
+        val tv = io.github.elente.respiro.adb.Shell { command -> if (command == "pm list packages -3") "package:com.stremio.one" else "" }
+        assertTrue(Uninstaller(tv, self).removable().isEmpty())
+    }
+
+    @Test
     fun `uninstalls a user app`() {
         assertTrue(Uninstaller(tv, self).uninstall("com.stremio.one"))
         assertTrue(tv.commands.contains("pm uninstall com.stremio.one"))

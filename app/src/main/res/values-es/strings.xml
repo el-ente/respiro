@@ -61,7 +61,10 @@
         <item quantity="other">Se desinstalaron %1$d apps que instalaste</item>
     </plurals>
     <string name="installed_title">Apps que instalaste</string>
-    <string name="installed_summary">%1$d apps · ocupan %2$s. Elige una para desinstalarla.</string>
+    <plurals name="installed_summary">
+        <item quantity="one">%1$d app · ocupa %2$s. Elígela para desinstalarla.</item>
+        <item quantity="other">%1$d apps · ocupan %2$s. Elige una para desinstalarla.</item>
+    </plurals>
     <string name="installed_empty">No hay apps instaladas por ti. Nada para desinstalar.</string>
     <string name="uninstalled_result">%1$s desinstalada · se liberaron %2$s</string>
     <string name="uninstalled_total">liberaste %1$s en total</string>
