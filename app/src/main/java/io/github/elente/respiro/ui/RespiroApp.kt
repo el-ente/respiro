@@ -35,7 +35,7 @@ import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
 import io.github.elente.respiro.TvState
 import io.github.elente.respiro.data.DebloatPlan
-import io.github.elente.respiro.debloat.Outcome
+import io.github.elente.respiro.data.NamedPackage
 import io.github.elente.respiro.debloat.SkipReason
 
 private val Background = Color(0xFF0B0F14)
@@ -61,7 +61,7 @@ fun RespiroApp(vm: MainViewModel) {
                 is TvState.Asking -> Asking(current.plan, onApply = { keep -> vm.apply(current.plan, keep) })
                 is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
                 TvState.Working -> Body(stringResource(R.string.working))
-                is TvState.Done -> Done(current.outcomes, onUndo = vm::openUndo)
+                is TvState.Done -> Done(current, onUndo = vm::openUndo)
                 is TvState.Undo -> Undo(current.packages, onTurnBackOn = vm::turnBackOn, onBack = vm::inspect)
             }
         }
@@ -118,31 +118,31 @@ private fun Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
 }
 
 @Composable
-private fun Done(outcomes: List<Outcome>, onUndo: () -> Unit) {
-    val disabled = outcomes.count { it is Outcome.Disabled }
-    Heading(pluralStringResource(R.plurals.switched_off, disabled, disabled))
+private fun Done(done: TvState.Done, onUndo: () -> Unit) {
+    Heading(pluralStringResource(R.plurals.switched_off, done.switchedOff, done.switchedOff))
     Body(stringResource(R.string.turn_debugging_off))
     FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
     // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
     LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(outcomes.filterIsInstance<Outcome.Skipped>(), key = { it.pkg }) { Body("  ·  ${it.pkg}: ${skipReason(it.reason)}") }
+        items(done.skipped, key = { it.first.pkg }) { (named, reason) -> Body("  ·  ${named.label}: ${skipReason(reason)}") }
     }
 }
 
 @Composable
-private fun Undo(packages: List<String>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
+private fun Undo(packages: List<NamedPackage>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
     Heading(stringResource(R.string.undo_title))
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         FocusedButton(stringResource(R.string.back), onBack)
-        if (packages.isNotEmpty()) Button(onClick = { onTurnBackOn(packages) }) { Text(stringResource(R.string.turn_all_back_on)) }
+        if (packages.isNotEmpty()) Button(onClick = { onTurnBackOn(packages.map { it.pkg }) }) { Text(stringResource(R.string.turn_all_back_on)) }
     }
     if (packages.isEmpty()) Body(stringResource(R.string.nothing_switched_off))
     LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(packages, key = { it }) { pkg ->
+        items(packages, key = { it.pkg }) { named ->
             ListItem(
                 selected = false,
-                onClick = { onTurnBackOn(listOf(pkg)) },
-                headlineContent = { Text(pkg) },
+                onClick = { onTurnBackOn(listOf(named.pkg)) },
+                headlineContent = { Text(named.label) },
+                supportingContent = { Text(named.reason ?: named.pkg) },
                 trailingContent = { Text(stringResource(R.string.turn_back_on)) },
                 modifier = Modifier.fillMaxWidth(),
             )

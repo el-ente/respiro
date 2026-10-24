@@ -137,6 +137,13 @@ class DeviceDatabaseTest {
     }
 
     @Test
+    fun `names the reason a package is switched off, or its ask label`() {
+        assertEquals("TCL HOME panel, gift box and promos", database.reasonFor("com.tcl.dashboard"))
+        assertEquals("YouTube", database.reasonFor("com.google.android.youtube.tv"))
+        assertNull(database.reasonFor("com.example.unknown"))
+    }
+
+    @Test
     fun `an unknown TV gets only the common layer`() {
         val plan = database.plan(null)
         assertEquals(setOf("com.google.android.feedback", "com.google.android.tvrecommendations"), plan.disable.map { it.pkg }.toSet())
