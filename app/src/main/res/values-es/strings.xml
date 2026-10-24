@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="connecting">Conectando con este televisor… Si Android pide permitir la depuración, elige Permitir siempre.</string>
+    <string name="connecting_title">Conectando con este televisor…</string>
+    <string name="connecting_help">Si Android pide permitir la depuración, elige Permitir siempre.</string>
     <string name="failed_title">Respiro no puede acceder a la depuración del televisor</string>
     <string name="failed_help">Activa Opciones para desarrolladores › Depuración por USB (y Depuración por red si tu televisor la tiene) y abre Respiro otra vez. Si sigue sin funcionar, reinicia el televisor.</string>
     <string name="known_tv">Este es un %1$s</string>
@@ -44,7 +45,7 @@
     <string name="failed_during_work">La conexión con el televisor se cortó mientras Respiro trabajaba. Lo que apagó hasta ahora está en Ver lo apagado; abre Respiro otra vez para terminar.</string>
     <string name="save_report">Guardar informe del televisor</string>
     <string name="report_saved_title">Informe guardado</string>
-    <string name="report_saved_help">Está en %1$s. Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
+    <string name="report_saved_help">Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
     <string name="reversible">no se borra nada y todo se puede deshacer</string>
     <string name="already_clean">Este televisor ya está liviano.</string>
     <string name="i_use_it">La uso: dejarla encendida</string>
@@ -80,4 +81,29 @@
     <string name="switched_off_row">Apagada · OK para encenderla</string>
     <string name="turned_on_result">%1$s está encendida de nuevo</string>
     <string name="turn_on_failed">No se pudo encender %1$s.</string>
+    <plurals name="hero_to_disable">
+        <item quantity="one">cosa para apagar</item>
+        <item quantity="other">cosas para apagar</item>
+    </plurals>
+    <plurals name="hero_to_ask">
+        <item quantity="one">app sobre la que te vamos a preguntar</item>
+        <item quantity="other">apps sobre las que te vamos a preguntar</item>
+    </plurals>
+    <plurals name="hero_switched_off">
+        <item quantity="one">cosa apagada</item>
+        <item quantity="other">cosas apagadas</item>
+    </plurals>
+    <plurals name="hero_installed">
+        <item quantity="one">ocupados por %1$d app que instalaste</item>
+        <item quantity="other">ocupados por %1$d apps que instalaste</item>
+    </plurals>
+    <string name="hero_safe_basics">Solo lo básico y seguro</string>
+    <string name="hero_applying">apagando…</string>
+    <string name="hero_freed_mb">+%1$d MB</string>
+    <string name="what_goes">Se apaga: %1$s</string>
+    <string name="chip_use">La uso</string>
+    <string name="chip_off">Apagar</string>
+    <string name="chip_uninstall">Desinstalar</string>
+    <string name="continue_count">Continuar · apagar %1$d</string>
+    <string name="dont_turn_off">No apagues el televisor.</string>
 </resources>

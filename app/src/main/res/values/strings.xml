@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Respiro</string>
-    <string name="connecting">Connecting to this TV… If Android asks to allow debugging, choose Always allow.</string>
+    <string name="connecting_title">Connecting to this TV…</string>
+    <string name="connecting_help">If Android asks to allow debugging, choose Always allow.</string>
     <string name="failed_title">Respiro can\'t reach this TV\'s debugging</string>
     <string name="failed_help">Turn on Developer options › USB debugging (and Network debugging if your TV has it), then open Respiro again. If it still fails, restart the TV.</string>
     <string name="known_tv">This is a %1$s</string>
@@ -45,7 +46,7 @@
     <string name="failed_during_work">The connection to the TV dropped while Respiro was working. What it switched off so far is listed under See what\'s off; open Respiro again to finish.</string>
     <string name="save_report">Save device report</string>
     <string name="report_saved_title">Device report saved</string>
-    <string name="report_saved_help">It\'s in %1$s. Send it with a file manager or a send-files app, and attach it to a new issue at github.com/el-ente/respiro: someone can add this TV to Respiro.</string>
+    <string name="report_saved_help">Send it with a file manager or a send-files app, and attach it to a new issue at github.com/el-ente/respiro: someone can add this TV to Respiro.</string>
     <string name="reversible">nothing is deleted and everything can be undone</string>
     <string name="already_clean">This TV is already clean.</string>
     <string name="i_use_it">I use it: leave it on</string>
@@ -81,4 +82,29 @@
     <string name="switched_off_row">Off · OK to turn it back on</string>
     <string name="turned_on_result">%1$s is on again</string>
     <string name="turn_on_failed">Couldn\'t turn on %1$s.</string>
+    <plurals name="hero_to_disable">
+        <item quantity="one">thing to switch off</item>
+        <item quantity="other">things to switch off</item>
+    </plurals>
+    <plurals name="hero_to_ask">
+        <item quantity="one">app to ask you about</item>
+        <item quantity="other">apps to ask you about</item>
+    </plurals>
+    <plurals name="hero_switched_off">
+        <item quantity="one">thing switched off</item>
+        <item quantity="other">things switched off</item>
+    </plurals>
+    <plurals name="hero_installed">
+        <item quantity="one">used by %1$d app you installed</item>
+        <item quantity="other">used by %1$d apps you installed</item>
+    </plurals>
+    <string name="hero_safe_basics">Safe basics only</string>
+    <string name="hero_applying">switching off…</string>
+    <string name="hero_freed_mb">+%1$d MB</string>
+    <string name="what_goes">What goes: %1$s</string>
+    <string name="chip_use">I use it</string>
+    <string name="chip_off">Off</string>
+    <string name="chip_uninstall">Uninstall</string>
+    <string name="continue_count">Continue · switch off %1$d</string>
+    <string name="dont_turn_off">Don\'t turn off the TV.</string>
 </resources>
