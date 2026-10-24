@@ -40,8 +40,9 @@ your Wi-Fi control the TV.
 
 ## Status
 
-Early. The app connects to its own TV's ADB on `localhost:5555` and reads what a debloat needs (tested on the TCL
-43" C06_2K_GB, Android 11): after the user accepts "Allow USB debugging?", it runs commands as the `shell` user.
+Early. The app connects to its own TV's ADB on `localhost:5555`, recognises the TV from the device database and
+shows the plan: what it would switch off, by group, and what it would ask about. It doesn't change anything yet.
+Tested on the TCL 43" C06_2K_GB (Android 11).
 
 Known so far:
 
