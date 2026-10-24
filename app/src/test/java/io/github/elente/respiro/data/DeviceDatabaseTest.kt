@@ -56,8 +56,21 @@ class DeviceDatabaseTest {
             assertFalse("${model.id} uses a layer id", model.id.startsWith("common/") || model.id.startsWith("vendors/"))
             assertTrue("${model.id} doesn't match ro.product.device", "ro.product.device" in model.match)
         }
-        val matches = database.files.filter { it.isModel }.map { it.match }
-        assertEquals("two models share the same match", matches.size, matches.toSet().size)
+        val models = database.files.filter { it.isModel }
+        models.forEach { a ->
+            models.filter { b -> b !== a && b.match.size == a.match.size }.forEach { b ->
+                val shared = a.match.keys intersect b.match.keys
+                assertFalse("${a.id} and ${b.id} could both fit one TV", shared.all { a.match[it] == b.match[it] })
+            }
+        }
+    }
+
+    @Test
+    fun `two equally specific models that both fit make the TV unknown`() {
+        val a = DeviceFile(id = "acme/a", name = "A", match = mapOf("ro.product.device" to "one", "ro.product.name" to "x"))
+        val b = DeviceFile(id = "acme/b", name = "B", match = mapOf("ro.product.device" to "one", "ro.product.model" to "y"))
+        val props = mapOf("ro.product.device" to "one", "ro.product.name" to "x", "ro.product.model" to "y")
+        assertNull(DeviceDatabase(listOf(a, b)).match(props))
     }
 
     @Test

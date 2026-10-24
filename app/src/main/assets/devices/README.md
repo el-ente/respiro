@@ -34,7 +34,8 @@ protected in code, not here, so no file can disable them.
 ```
 
 - **match:** system properties that must all be equal, always including `ro.product.device`. Respiro picks the model
-  with the most matching properties; no two models may have the same match.
+  with the most matching properties; if two models fit equally well, the TV counts as unknown, so no two models of
+  the same specificity may agree on every property they share.
 - **disable:** safe to switch off on this model; Respiro does it without asking.
 - **ask:** things people use; Respiro asks first and disables only what the user doesn't tick. If one layer disables
   a package and another asks about it, Respiro asks.
