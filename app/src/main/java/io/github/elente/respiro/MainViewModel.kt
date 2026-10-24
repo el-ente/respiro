@@ -3,6 +3,7 @@ package io.github.elente.respiro
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.elente.respiro.adb.ConnectionProblem
 import io.github.elente.respiro.adb.SelfAdb
 import io.github.elente.respiro.data.AppNames
 import io.github.elente.respiro.data.AssetDevices
@@ -29,7 +30,7 @@ import java.io.File
 sealed interface TvState {
     data object Connecting : TvState
 
-    data class Failed(val reason: String) : TvState
+    data class Failed(val problem: ConnectionProblem, val detail: String) : TvState
 
     /** The plan for this TV, already narrowed to what is installed and still on. A null model means an unknown TV. */
     data class Ready(val manufacturer: String, val model: String, val plan: DebloatPlan, val switchedOff: Int) : TvState
@@ -110,7 +111,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = busy
         job = viewModelScope.launch(Dispatchers.IO) {
             _state.value = runCatching { SelfAdb.session(getApplication(), work) }
-                .getOrElse { TvState.Failed(it.message ?: it.javaClass.simpleName) }
+                .getOrElse { TvState.Failed(ConnectionProblem.of(it), it.message ?: it.javaClass.simpleName) }
         }
     }
 
