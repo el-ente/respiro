@@ -85,8 +85,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Off the main thread: one PackageManager lookup per app could stutter a 1 GB TV. */
     fun openUndo() {
-        _state.value = undoList()
+        viewModelScope.launch(Dispatchers.IO) { _state.value = undoList() }
     }
 
     fun turnBackOn(packages: List<String>) = onTv(TvState.Working) { shell ->
