@@ -34,6 +34,7 @@ import androidx.tv.material3.darkColorScheme
 import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
 import io.github.elente.respiro.TvState
+import io.github.elente.respiro.adb.ConnectionProblem
 import io.github.elente.respiro.data.DebloatPlan
 import io.github.elente.respiro.data.NamedPackage
 import io.github.elente.respiro.debloat.SkipReason
@@ -71,8 +72,14 @@ fun RespiroApp(vm: MainViewModel) {
 @Composable
 private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
     Heading(stringResource(R.string.failed_title))
-    Body(stringResource(R.string.failed_help))
-    Body(failed.reason)
+    when (failed.problem) {
+        ConnectionProblem.DEBUGGING_OFF -> Body(stringResource(R.string.failed_debugging_off))
+        ConnectionProblem.NOT_ALLOWED -> Body(stringResource(R.string.failed_not_allowed))
+        ConnectionProblem.OTHER -> {
+            Body(stringResource(R.string.failed_help))
+            Body(failed.detail)
+        }
+    }
     FocusedButton(stringResource(R.string.retry), onRetry)
     Body(stringResource(R.string.debugging_reminder))
 }
