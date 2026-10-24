@@ -102,7 +102,9 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
         Heading(stringResource(R.string.unknown_tv, ready.manufacturer, ready.model))
         Body(stringResource(R.string.unknown_tv_help))
     }
-    Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size) + "  ·  " + stringResource(R.string.reversible))
+    if (plan.disable.isNotEmpty()) {
+        Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size) + "  ·  " + stringResource(R.string.reversible))
+    }
     if (plan.ask.isNotEmpty()) Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
     // Buttons above the list, so a long list can never push them off screen.
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
