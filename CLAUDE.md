@@ -6,8 +6,11 @@ Android TV app that debloats the TV it runs on, over the TV's own ADB, using a b
 
 These come from debloating real TVs. Breaking one can leave a TV that doesn't boot or can't reach the network.
 
-- **Disable, never uninstall.** Switch packages off with `pm disable-user --user 0`. No `pm uninstall`, no root,
-  nothing flashed. Every change must be recorded and reversible from the app.
+- **Preinstalled apps are disabled, never uninstalled.** Switch them off with `pm disable-user --user 0`; every
+  change is recorded and reversible from the app. No root, nothing flashed.
+- **Apps the user installed are uninstalled** (`pm uninstall`), never disabled: when the plan or the uninstall list
+  includes one, after the user saw it named as "will be uninstalled" or confirmed it one by one. Only packages in
+  `pm list packages -3`, never Respiro itself or the app that is Home. Not undoable from the app; say so.
 - **Recovering space is allowed only for preinstalled packages Respiro switched off:** once one is confirmed off, it
   may remove the app's updates (`pm uninstall-system-updates`, the factory version stays) and clear its data
   (`pm clear`), then confirm it is still off. Turning it back on gives the factory version. Never for a kept,

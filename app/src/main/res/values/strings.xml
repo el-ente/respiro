@@ -54,4 +54,21 @@
     <string name="debug_step_1">Open Settings › Device Preferences › Developer options.</string>
     <string name="debug_step_2">Turn off USB debugging, and Network debugging if your TV has it.</string>
     <string name="debug_step_3">Respiro will ask to allow debugging again next time; that\'s normal.</string>
+    <string name="uninstall_apps">Uninstall apps (%1$d)</string>
+    <string name="will_uninstall">Will be uninstalled · %1$s</string>
+    <string name="i_dont_use_it_uninstall">I don\'t use it: uninstall it</string>
+    <plurals name="apps_uninstalled">
+        <item quantity="one">%1$d app you installed was uninstalled</item>
+        <item quantity="other">%1$d apps you installed were uninstalled</item>
+    </plurals>
+    <string name="installed_title">Apps you installed</string>
+    <string name="installed_summary">%1$d apps · %2$s in total. Pick one to uninstall.</string>
+    <string name="installed_empty">No apps installed by you. Nothing to uninstall.</string>
+    <string name="uninstalled_result">%1$s uninstalled · %2$s freed</string>
+    <string name="uninstalled_total">%1$s freed in total</string>
+    <string name="uninstall_failed">Couldn\'t uninstall %1$s.</string>
+    <string name="uninstall_confirm_title">Uninstall %1$s?</string>
+    <string name="uninstall_confirm_body">This removes the app and its data (%1$s). You can install it again from the Play Store, but you\'ll need to sign in again.</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="cancel">Cancel</string>
 </resources>

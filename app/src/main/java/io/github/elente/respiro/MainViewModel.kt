@@ -16,6 +16,8 @@ import io.github.elente.respiro.debloat.Debloater
 import io.github.elente.respiro.debloat.Outcome
 import io.github.elente.respiro.debloat.SkipReason
 import io.github.elente.respiro.debloat.Storage
+import io.github.elente.respiro.debloat.Uninstaller
+import androidx.compose.ui.graphics.ImageBitmap
 import io.github.elente.respiro.debloat.TvPackages
 import io.github.elente.respiro.debloat.forTv
 import io.github.elente.respiro.report.DeviceReport
@@ -28,6 +30,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
+/** An app the user installed, as the uninstall list shows it. */
+data class InstalledApp(val named: NamedPackage, val icon: ImageBitmap?, val bytes: Long)
+
+/** What the last uninstall did: [totalBytes] adds up everything uninstalled this session. */
+data class UninstallResult(val label: String, val removed: Boolean, val bytes: Long, val totalBytes: Long)
+
 /** Where Respiro stands with this TV. */
 sealed interface TvState {
     data object Connecting : TvState
@@ -36,20 +44,28 @@ sealed interface TvState {
 
     /** The plan for this TV, already narrowed to what is installed and still on. A null model means an unknown TV. */
     /** [toSwitchOff] names each package of the plan's disable list, in the same order. */
+    /** [userApps] are the plan's packages the user installed: uninstalled, not switched off. */
     data class Ready(
         val props: Map<String, String>,
         val plan: DebloatPlan,
         val toSwitchOff: List<NamedPackage>,
         val switchedOff: Int,
+        val userApps: Set<String>,
+        val removable: Int,
     ) : TvState {
         val manufacturer: String get() = props[Getprop.MANUFACTURER].orEmpty()
         val model: String get() = props[Getprop.MODEL].orEmpty()
     }
 
+    /** Apps the user installed, biggest first; [result] says what the last uninstall did. */
+    data class Installed(val apps: List<InstalledApp>, val result: UninstallResult?) : TvState
+
+    data class ConfirmUninstall(val app: InstalledApp) : TvState
+
     /** The device report was saved to [path] on the TV. */
     data class ReportSaved(val path: String) : TvState
 
-    data class Asking(val plan: DebloatPlan) : TvState
+    data class Asking(val plan: DebloatPlan, val userApps: Set<String>) : TvState
 
     data class Applying(val done: Int, val total: Int) : TvState
 
@@ -57,7 +73,12 @@ sealed interface TvState {
     data object Working : TvState
 
     /** [freedMb] is null when the TV didn't report its free space. */
-    data class Done(val switchedOff: Int, val skipped: List<Pair<NamedPackage, SkipReason>>, val freedMb: Long?) : TvState
+    data class Done(
+        val switchedOff: Int,
+        val uninstalled: Int,
+        val skipped: List<Pair<NamedPackage, SkipReason>>,
+        val freedMb: Long?,
+    ) : TvState
 
     /** Everything Respiro switched off, to turn back on. */
     data class Undo(val packages: List<NamedPackage>) : TvState
@@ -75,18 +96,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** One job on the TV at a time: a second tap while one runs is ignored. */
     private var job: Job? = null
 
+    private val selfPackage = app.packageName
+    private var lastInstalled: TvState.Installed? = null
+    private var freedByUninstall = 0L
+
     init {
         inspect()
     }
 
     fun inspect() = onTv(TvState.Connecting) { shell ->
         val props = Getprop.parse(shell.run("getprop"))
-        val plan = database.plan(database.match(props)).forTv(TvPackages.read(shell))
-        TvState.Ready(props, plan, plan.disable.map { names.describe(it.pkg) }, log.all().size)
+        val tv = TvPackages.read(shell)
+        val plan = database.plan(database.match(props)).forTv(tv)
+        val userApps = (plan.disable.map { it.pkg } + plan.ask.map { it.pkg }).filter(tv::isUserApp).toSet()
+        TvState.Ready(
+            props = props,
+            plan = plan,
+            toSwitchOff = plan.disable.map { names.describe(it.pkg) },
+            switchedOff = log.all().size,
+            userApps = userApps,
+            removable = Uninstaller(shell, selfPackage).removable().size,
+        )
     }
 
-    fun ask(plan: DebloatPlan) {
-        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet()) else _state.value = TvState.Asking(plan)
+    fun ask(plan: DebloatPlan, userApps: Set<String>) {
+        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet()) else _state.value = TvState.Asking(plan, userApps)
     }
 
     /** Switches off the plan's list plus every asked-about app the user didn't tick, after a backup. */
@@ -98,6 +132,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val outcomes = Debloater(shell, log).disable(packages) { done, total -> _state.value = TvState.Applying(done, total) }
             TvState.Done(
                 switchedOff = outcomes.count { it is Outcome.Disabled },
+                uninstalled = outcomes.count { it is Outcome.Uninstalled },
                 skipped = outcomes.filterIsInstance<Outcome.Skipped>().map { names.describe(it.pkg) to it.reason },
                 freedMb = freedMb(freeBefore, Storage.freeKb(shell)),
             )
@@ -115,6 +150,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val path = DeviceReport.path(props)
         ReportFile.write(shell, path, report)
         TvState.ReportSaved(path)
+    }
+
+    fun openInstalled() = onTv(TvState.Working) { shell -> TvState.Installed(installedApps(shell), result = null) }
+
+    fun askUninstall(app: InstalledApp) {
+        _state.value = TvState.ConfirmUninstall(app)
+    }
+
+    /** Back from the confirmation: the list as it was, without asking the TV again. */
+    fun cancelUninstall() {
+        _state.value = lastInstalled ?: TvState.Connecting.also { inspect() }
+    }
+
+    fun uninstall(app: InstalledApp) = onTv(TvState.Working) { shell ->
+        val removed = Uninstaller(shell, selfPackage).uninstall(app.named.pkg)
+        if (removed) freedByUninstall += app.bytes
+        TvState.Installed(installedApps(shell), UninstallResult(app.named.label, removed, app.bytes, freedByUninstall))
+    }
+
+    private fun installedApps(shell: io.github.elente.respiro.adb.Shell): List<InstalledApp> {
+        val sizes = Storage.appSizes(shell)
+        return Uninstaller(shell, selfPackage).removable()
+            .map { InstalledApp(names.describe(it), names.icon(it, ICON_PX), sizes[it] ?: 0) }
+            .sortedByDescending { it.bytes }
     }
 
     fun openUndo() {
@@ -136,12 +195,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (job?.isActive == true) return
         _state.value = busy
         job = viewModelScope.launch(Dispatchers.IO) {
-            _state.value = runCatching { SelfAdb.session(getApplication(), work) }
+            val next = runCatching { SelfAdb.session(getApplication(), work) }
                 .getOrElse { TvState.Failed(ConnectionProblem.of(it), it.message ?: it.javaClass.simpleName) }
+            if (next is TvState.Installed) lastInstalled = next
+            _state.value = next
         }
     }
 
     private companion object {
         const val KB_PER_MB = 1024
+        const val ICON_PX = 96
     }
 }

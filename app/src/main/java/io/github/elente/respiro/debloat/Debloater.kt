@@ -9,6 +9,9 @@ sealed interface Outcome {
 
     data class Disabled(override val pkg: String) : Outcome
 
+    /** An app the user installed: removed, not switched off. Not in the undo list; the Play Store has it. */
+    data class Uninstalled(override val pkg: String) : Outcome
+
     data class Skipped(override val pkg: String, val reason: SkipReason) : Outcome
 }
 
@@ -24,7 +27,8 @@ enum class SkipReason {
 }
 
 /**
- * Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
+ * Preinstalled apps are switched off; apps the user installed are uninstalled (`pm uninstall`), since there is no
+ * factory copy to fall back to and nothing to keep them for. Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
  * batch, recording every change so it can be undone. Once a preinstalled app is off, it gives back the space it took:
  * removes its updates (the factory version stays) and clears its data. It never uninstalls an app, and never touches
  * the data of an app the user installed.
@@ -55,6 +59,7 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
     private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
+        if (pkg !in preinstalled) return uninstall(pkg)
         // Recorded before any command: if the connection drops after pm ran, undo still knows about it.
         log.add(pkg)
         if (!switchOff(pkg)) {
@@ -68,6 +73,9 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         }
         return Outcome.Disabled(pkg)
     }
+
+    private fun uninstall(pkg: String): Outcome =
+        if (shell.run("pm uninstall $pkg").trim() == "Success") Outcome.Uninstalled(pkg) else Outcome.Skipped(pkg, SkipReason.REFUSED)
 
     private fun switchOff(pkg: String): Boolean =
         shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")

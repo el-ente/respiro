@@ -10,6 +10,7 @@ class FakeTv(
     private val refuses: Set<String> = emptySet(),
     private val failedChecks: Int = 0,
     private val preinstalled: Set<String> = installed,
+    private val home: String = "io.github.elente.daiji",
 ) : Shell {
     private val installed = installed.toMutableSet()
     val disabled = disabled.toMutableSet()
@@ -22,6 +23,12 @@ class FakeTv(
         return when {
             command == "pm list packages" -> installed.joinToString("\n") { "package:$it" }
             command == "pm list packages -s" -> preinstalled.joinToString("\n") { "package:$it" }
+            command == "pm list packages -3" -> (installed - preinstalled).joinToString("\n") { "package:$it" }
+            command.startsWith("cmd package resolve-activity") -> "priority=0 preferredOrder=0\n$home/.MainActivity"
+            command.startsWith("pm uninstall ") && !command.startsWith("pm uninstall-system-updates") && pkg in installed -> {
+                installed -= pkg
+                "Success"
+            }
             command == "pm list packages -d" && checksToFail > 0 -> "".also { checksToFail-- }
             command == "pm list packages -d" -> disabled.joinToString("\n") { "package:$it" }
             command == "dumpsys wifi" -> wifiDump

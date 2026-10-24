@@ -36,11 +36,13 @@ class DebloaterTest {
     }
 
     @Test
-    fun `never clears an app the user installed`() {
+    fun `uninstalls an app the user installed instead of switching it off, and keeps it out of undo`() {
         val tv = FakeTv(installed = setOf("com.netflix.ninja"), preinstalled = emptySet())
-        Debloater(tv, log()).disable(listOf("com.netflix.ninja"))
-        assertTrue("com.netflix.ninja" in tv.disabled)
-        assertTrue(tv.commands.none { it.startsWith("pm clear") || it.startsWith("pm uninstall") })
+        val log = log()
+        val outcomes = Debloater(tv, log).disable(listOf("com.netflix.ninja"))
+        assertEquals(listOf(Outcome.Uninstalled("com.netflix.ninja")), outcomes)
+        assertTrue(tv.commands.none { it.startsWith("pm disable-user") || it.startsWith("pm clear") })
+        assertTrue(log.all().isEmpty())
     }
 
     @Test
@@ -98,10 +100,10 @@ class DebloaterTest {
     @Test
     fun `checks the TV after every batch of five`() {
         val packages = (1..7).map { "com.tcl.p$it" }
-        // Not preinstalled, so the only disabled-list reads are the batch checks.
-        val tv = FakeTv(installed = packages.toSet(), preinstalled = emptySet())
+        val tv = FakeTv(installed = packages.toSet())
         Debloater(tv, log()).disable(packages)
-        assertEquals(2, tv.commands.count { it == "pm list packages -d" })
+        // One check per batch, plus one per app after its space was given back.
+        assertEquals(2 + packages.size, tv.commands.count { it == "pm list packages -d" })
     }
 
     @Test
