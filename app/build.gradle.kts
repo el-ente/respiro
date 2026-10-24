@@ -20,13 +20,22 @@ android {
     }
 
     signingConfigs {
-        // Development key committed on purpose, as in Daiji: every build, local or CI, can update the last one, so
-        // Respiro keeps its ADB key and the TV doesn't ask to allow debugging again. Replace before publishing to a store.
+        // Debug builds only: this key is public, so it must never sign what users install. Respiro holds an ADB key
+        // the TV trusts, and anyone with the signing key could ship an "update" that inherits it.
         create("dev") {
             storeFile = file("dev.keystore")
             storePassword = "respiro-dev"
             keyAlias = "respiro"
             keyPassword = "respiro-dev"
+        }
+        // Releases: the private key, given by CI from repository secrets (see CLAUDE.md, Releases).
+        System.getenv("RESPIRO_KEYSTORE")?.let { path ->
+            create("release") {
+                storeFile = file(path)
+                storePassword = System.getenv("RESPIRO_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RESPIRO_KEY_ALIAS")
+                keyPassword = System.getenv("RESPIRO_KEY_PASSWORD")
+            }
         }
     }
 
@@ -36,12 +45,10 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("dev")
+            // Without the release key (local builds, pull requests) a release build is signed with the dev key, for
+            // testing only; published APKs always come from CI with the private key.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("dev")
         }
-    }
-
-    buildFeatures {
-        compose = true
     }
 
     compileOptions {
