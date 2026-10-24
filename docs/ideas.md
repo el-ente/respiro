@@ -22,7 +22,6 @@ Not planned yet. Move an idea to specs.md when it's decided.
 - **Ad-blocking Private DNS** as an optional step (`dns.adguard-dns.com`), warning that it doesn't block YouTube ads
   and bypasses a router's own DNS filtering.
 - **Screensaver swap** before disabling a heavy photo screensaver (the TCL's `backdrop` uses about 105 MB).
-- **Free cache space**: clear data of disabled apps and trim caches (the TCL got back about 250 MB).
 - **Firmware re-enables packages at boot**: show them as "comes back on restart" instead of failing.
 - **Before/after numbers**: free RAM, boot time, number of background processes.
 
@@ -30,6 +29,8 @@ Not planned yet. Move an idea to specs.md when it's decided.
 
 - **App uninstaller**: list the apps the user installed themselves (not preinstalled), with size and last used,
   and remove the ones they pick. Preinstalled packages stay disable-only, as the safety rules require.
+- **Clear cache**, any time: trim every app's cache (`pm trim-caches`) and clear the data of apps Respiro switched
+  off, showing the space freed. On the TCL this took free storage from 704 MB to 955 MB.
 
 ## Experience
 
