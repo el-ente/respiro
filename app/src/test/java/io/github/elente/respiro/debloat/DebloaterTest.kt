@@ -51,6 +51,25 @@ class DebloaterTest {
     }
 
     @Test
+    fun `a failed check keeps the undo record`() {
+        val tv = FakeTv(installed = setOf("com.tcl.a"), failedChecks = 1)
+        val log = log()
+        val outcomes = Debloater(tv, log).disable(listOf("com.tcl.a"))
+        assertEquals(listOf(Outcome.Disabled("com.tcl.a")), outcomes)
+        assertEquals(listOf("com.tcl.a"), log.all())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `an unreadable Wi-Fi dump stops before any change`() {
+        val tv = FakeTv(installed = setOf("com.tcl.a"), wifiDump = "")
+        try {
+            Debloater(tv, log()).disable(listOf("com.tcl.a"))
+        } finally {
+            assertTrue(tv.disabled.isEmpty())
+        }
+    }
+
+    @Test
     fun `checks the TV after every batch of five`() {
         val packages = (1..7).map { "com.tcl.p$it" }
         val tv = FakeTv(installed = packages.toSet())

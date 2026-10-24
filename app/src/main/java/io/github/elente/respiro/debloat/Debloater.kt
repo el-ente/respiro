@@ -19,7 +19,7 @@ enum class SkipReason {
     /** It owns a saved Wi-Fi network; Android deletes the network when it's disabled, taking the TV offline. */
     OWNS_WIFI,
 
-    /** Android refused, or the package was still on when checked after its batch. */
+    /** Android refused, or the package was still on when checked after its batch. Undo still lists it, to be safe. */
     REFUSED,
 }
 
@@ -33,11 +33,10 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         val wifiOwners = wifiOwners()
         val outcomes = mutableListOf<Outcome>()
         packages.chunked(BATCH_SIZE).forEach { batch ->
-            batch.forEach { pkg ->
-                outcomes += disableOne(pkg, wifiOwners)
-                onProgress(outcomes.size, packages.size)
+            val batchOutcomes = batch.mapIndexed { index, pkg ->
+                disableOne(pkg, wifiOwners).also { onProgress(outcomes.size + index + 1, packages.size) }
             }
-            confirmBatch(outcomes)
+            outcomes += confirm(batchOutcomes)
         }
         return outcomes
     }
@@ -53,29 +52,35 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
     private fun disableOne(pkg: String, wifiOwners: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
+        // Recorded before the command: if the connection drops after pm ran, undo still knows about it.
+        log.add(pkg)
         if (!shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")) {
+            log.remove(pkg)
             return Outcome.Skipped(pkg, SkipReason.REFUSED)
         }
-        log.add(pkg)
         return Outcome.Disabled(pkg)
     }
 
-    /** Anything reported off but not in the TV's disabled list becomes a refusal, so the record matches the TV. */
-    private fun confirmBatch(outcomes: MutableList<Outcome>) {
+    /**
+     * Checks one batch against the TV's disabled list. A package reported off but missing from it becomes a refusal,
+     * but stays in the undo record: turning on something already on does no harm, losing track of something off does.
+     * An empty list means the check itself failed, so nothing is changed.
+     */
+    private fun confirm(batch: List<Outcome>): List<Outcome> {
         val disabled = TvPackages.parse(shell.run("pm list packages -d"))
-        outcomes.replaceAll { outcome ->
-            if (outcome is Outcome.Disabled && outcome.pkg !in disabled) {
-                log.remove(outcome.pkg)
-                Outcome.Skipped(outcome.pkg, SkipReason.REFUSED)
-            } else {
-                outcome
-            }
-        }
+        if (disabled.isEmpty()) return batch
+        return batch.map { if (it is Outcome.Disabled && it.pkg !in disabled) Outcome.Skipped(it.pkg, SkipReason.REFUSED) else it }
     }
 
-    /** Packages (or shared users) that created a saved Wi-Fi network, from `cname=` in the Wi-Fi dump. */
-    private fun wifiOwners(): Set<String> =
-        cname.findAll(shell.run("dumpsys wifi")).map { it.groupValues[1] }.toSet()
+    /**
+     * Packages (or shared users) that created a saved Wi-Fi network, from `cname=` in the Wi-Fi dump. An empty dump
+     * means the check failed, and switching off blind could take the TV offline, so nothing is done.
+     */
+    private fun wifiOwners(): Set<String> {
+        val dump = shell.run("dumpsys wifi")
+        check(dump.isNotBlank()) { "Couldn't read who owns the saved Wi-Fi networks" }
+        return cname.findAll(dump).map { it.groupValues[1] }.toSet()
+    }
 
     private companion object {
         const val BATCH_SIZE = 5

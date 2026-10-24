@@ -60,6 +60,7 @@ fun RespiroApp(vm: MainViewModel) {
                 is TvState.Ready -> Ready(current, onStart = { vm.ask(current.plan) }, onUndo = vm::openUndo)
                 is TvState.Asking -> Asking(current.plan, onApply = { keep -> vm.apply(current.plan, keep) })
                 is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
+                TvState.Working -> Body(stringResource(R.string.working))
                 is TvState.Done -> Done(current.outcomes, onUndo = vm::openUndo)
                 is TvState.Undo -> Undo(current.packages, onTurnBackOn = vm::turnBackOn, onBack = vm::inspect)
             }
@@ -73,6 +74,7 @@ private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
     Body(stringResource(R.string.failed_help))
     Body(failed.reason)
     FocusedButton(stringResource(R.string.retry), onRetry)
+    Body(stringResource(R.string.debugging_reminder))
 }
 
 @Composable
@@ -119,9 +121,12 @@ private fun Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
 private fun Done(outcomes: List<Outcome>, onUndo: () -> Unit) {
     val disabled = outcomes.count { it is Outcome.Disabled }
     Heading(pluralStringResource(R.plurals.switched_off, disabled, disabled))
-    outcomes.filterIsInstance<Outcome.Skipped>().forEach { Body("  ·  ${it.pkg}: ${skipReason(it.reason)}") }
     Body(stringResource(R.string.turn_debugging_off))
     FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
+    // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(outcomes.filterIsInstance<Outcome.Skipped>(), key = { it.pkg }) { Body("  ·  ${it.pkg}: ${skipReason(it.reason)}") }
+    }
 }
 
 @Composable

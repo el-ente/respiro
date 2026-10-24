@@ -39,4 +39,6 @@
     <string name="skip_protected">sin tocar: Android lo necesita</string>
     <string name="skip_owns_wifi">sin tocar: es dueño de tu red Wi-Fi guardada</string>
     <string name="skip_refused">Android no lo permitió</string>
+    <string name="working">Volviendo a encender…</string>
+    <string name="debugging_reminder">Cuando termines con Respiro, vuelve a desactivar la depuración por USB y por red en Ajustes › Opciones para desarrolladores.</string>
 </resources>

@@ -14,6 +14,7 @@ import io.github.elente.respiro.debloat.Outcome
 import io.github.elente.respiro.debloat.TvPackages
 import io.github.elente.respiro.debloat.forTv
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +34,9 @@ sealed interface TvState {
 
     data class Applying(val done: Int, val total: Int) : TvState
 
+    /** Turning things back on. */
+    data object Working : TvState
+
     data class Done(val outcomes: List<Outcome>) : TvState
 
     /** Everything Respiro switched off, to turn back on. */
@@ -46,11 +50,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val log = ChangeLog(File(app.filesDir, "switched-off.txt"))
     private val backups = File(app.filesDir, "backups")
 
+    /** One job on the TV at a time: a second tap while one runs is ignored. */
+    private var job: Job? = null
+
     init {
         inspect()
     }
 
-    fun inspect() = onTv { shell ->
+    fun inspect() = onTv(TvState.Connecting) { shell ->
         val props = Getprop.parse(shell.run("getprop"))
         val database = AssetDevices.load(getApplication<Application>().assets)
         val plan = database.plan(database.match(props)).forTv(TvPackages.read(shell))
@@ -58,15 +65,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun ask(plan: DebloatPlan) {
-        _state.value = if (plan.ask.isEmpty()) TvState.Applying(0, plan.disable.size) else TvState.Asking(plan)
-        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet())
+        if (plan.ask.isEmpty()) apply(plan, keepUsing = emptySet()) else _state.value = TvState.Asking(plan)
     }
 
     /** Switches off the plan's list plus every asked-about app the user didn't tick, after a backup. */
     fun apply(plan: DebloatPlan, keepUsing: Set<String>) {
         val packages = plan.disable.map { it.pkg } + plan.ask.map { it.pkg }.filter { it !in keepUsing }
-        _state.value = TvState.Applying(0, packages.size)
-        onTv { shell ->
+        onTv(TvState.Applying(0, packages.size)) { shell ->
             Backup.save(shell, backups, System.currentTimeMillis())
             val outcomes = Debloater(shell, log).disable(packages) { done, total -> _state.value = TvState.Applying(done, total) }
             TvState.Done(outcomes)
@@ -77,14 +82,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = TvState.Undo(log.all())
     }
 
-    fun turnBackOn(packages: List<String>) = onTv { shell ->
+    fun turnBackOn(packages: List<String>) = onTv(TvState.Working) { shell ->
         val debloater = Debloater(shell, log)
         packages.forEach(debloater::enable)
         TvState.Undo(log.all())
     }
 
-    private fun onTv(work: (io.github.elente.respiro.adb.Shell) -> TvState) {
-        viewModelScope.launch(Dispatchers.IO) {
+    private fun onTv(busy: TvState, work: (io.github.elente.respiro.adb.Shell) -> TvState) {
+        if (job?.isActive == true) return
+        _state.value = busy
+        job = viewModelScope.launch(Dispatchers.IO) {
             _state.value = runCatching { SelfAdb.session(getApplication(), work) }
                 .getOrElse { TvState.Failed(it.message ?: it.javaClass.simpleName) }
         }

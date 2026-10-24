@@ -40,4 +40,6 @@
     <string name="skip_protected">left alone: Android needs it</string>
     <string name="skip_owns_wifi">left alone: it owns your saved Wi-Fi network</string>
     <string name="skip_refused">Android didn\'t allow it</string>
+    <string name="working">Turning back on…</string>
+    <string name="debugging_reminder">When you\'re done with Respiro, turn USB and network debugging off again in Settings › Developer options.</string>
 </resources>
