@@ -40,9 +40,9 @@ your Wi-Fi control the TV.
 
 ## Status
 
-Early. The app connects to its own TV's ADB on `localhost:5555`, recognises the TV from the device database and
-shows the plan: what it would switch off, by group, and what it would ask about. It doesn't change anything yet.
-Tested on the TCL 43" C06_2K_GB (Android 11).
+Early, but it works end to end on the TCL 43" C06_2K_GB (Android 11): Respiro connects to the TV's own ADB,
+recognises the TV, shows the plan (only what is installed and still on), asks about the apps people use, backs up,
+switches the rest off in checked batches, and lists what it switched off so any of it can be turned back on.
 
 Known so far:
 

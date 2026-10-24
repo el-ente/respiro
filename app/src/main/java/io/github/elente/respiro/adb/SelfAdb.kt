@@ -17,8 +17,11 @@ object SelfAdb {
     /** Long enough to read and accept "Allow debugging?"; past it the app shows what to do instead of hanging. */
     private const val SOCKET_TIMEOUT_MS = 30_000
 
-    fun shell(context: Context, command: String): String =
-        Dadb.create(HOST, PORT, keyPair(context), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS).use { adb -> adb.shell(command).allOutput.trim() }
+    /** One connection for a series of commands, closed when [block] returns. */
+    fun <T> session(context: Context, block: (Shell) -> T): T =
+        Dadb.create(HOST, PORT, keyPair(context), CONNECT_TIMEOUT_MS, SOCKET_TIMEOUT_MS).use { adb ->
+            block(Shell { command -> adb.shell(command).allOutput.trim() })
+        }
 
     /** Respiro's own ADB key, made on first use and kept in the app's private files. */
     private fun keyPair(context: Context): AdbKeyPair {
