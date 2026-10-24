@@ -108,7 +108,14 @@ private fun HeroPanel(modifier: Modifier, hero: @Composable ColumnScope.() -> Un
 
 @Composable
 fun HeroNumber(text: String, color: Color = Air) =
-    Text(text, color = color, fontSize = HeroNumberSize, fontWeight = FontWeight.Light, maxLines = 1)
+    Text(text, color = color, fontSize = heroNumberSize(text), fontWeight = FontWeight.Light, maxLines = 1, softWrap = false)
+
+/** The hero panel fits about four characters at full size; "850 MB" or "10 / 14" step down so they never cut. */
+private fun heroNumberSize(text: String) = when {
+    text.length <= 4 -> HeroNumberSize
+    text.length <= 7 -> 64.sp
+    else -> 48.sp
+}
 
 @Composable
 fun HeroLabel(text: String, color: Color = TextColor) =
@@ -220,8 +227,8 @@ fun ProgressBar(fraction: Float) {
 fun ResultBanner(text: String, failed: Boolean) {
     val color = if (failed) Amber else Air
     Box(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(CircleShape).background(color.copy(alpha = 0.15f))
-            .padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(24.dp))
+            .background(color.copy(alpha = 0.15f)).padding(horizontal = 24.dp, vertical = 12.dp),
         contentAlignment = Alignment.CenterStart,
     ) { Text(text, color = color, fontSize = BodySize) }
 }

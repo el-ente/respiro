@@ -40,6 +40,7 @@ private val DialogWidth = 640.dp
 fun Installed(deviceName: String, installed: TvState.Installed, onPick: (InstalledApp) -> Unit, onTurnOn: (InstalledApp) -> Unit) {
     RespiroScaffold(deviceName, hero = { InstalledHero(installed.apps) }) {
         installed.result?.let { AppsResultBanner(it) }
+        // An app row may take focus although it is permanent: OK only opens the confirmation, with Cancel focused.
         val focused = defaultFocusApp(installed)
         val focusModifier = initialFocus(installed)
         val rowModifier = { app: InstalledApp -> if (app == focused) focusModifier else Modifier }

@@ -120,38 +120,46 @@ private fun Ready(
     val plan = ready.plan
     val hasWork = plan.disable.isNotEmpty() || plan.ask.isNotEmpty()
     val apps = ready.removable + ready.switchedOff
-    RespiroScaffold(deviceName, hero = { ReadyHero(ready) }) {
+    val toUninstall = ready.toSwitchOff.filter { it.pkg in ready.userApps }
+    // Start runs at once when nothing is asked, so it is permanent, and never focused, when it uninstalls.
+    val startVariant = if (toUninstall.isEmpty()) ActionVariant.PRIMARY else ActionVariant.PERMANENT
+    val focusStart = hasWork && toUninstall.isEmpty()
+    RespiroScaffold(deviceName, hero = { ReadyHero(ready, isReversible = toUninstall.isEmpty()) }) {
         if (hasWork) {
             val start = if (plan.disable.isNotEmpty()) R.string.start else R.string.switch_off_now
-            ActionRow(stringResource(start), ActionVariant.PRIMARY, onStart, initialFocus())
+            ActionRow(stringResource(start), startVariant, onStart, if (focusStart) initialFocus() else Modifier)
         }
+        val firstSecondaryFocus = if (focusStart) Modifier else initialFocus()
         if (ready.switchedOff > 0) {
-            ActionRow(stringResource(R.string.see_switched_off, ready.switchedOff), ActionVariant.SECONDARY, onUndo)
+            ActionRow(stringResource(R.string.see_switched_off, ready.switchedOff), ActionVariant.SECONDARY, onUndo, firstSecondaryFocus)
         }
         // Never the default focus: uninstalling can't be undone.
         if (apps > 0) ActionRow(stringResource(R.string.uninstall_apps, apps), ActionVariant.PERMANENT, onApps)
-        val freeSpaceFocus = if (hasWork) Modifier else initialFocus()
+        val freeSpaceFocus = if (ready.switchedOff > 0) Modifier else firstSecondaryFocus
         ActionRow(stringResource(R.string.free_space), ActionVariant.SECONDARY, onFreeSpace, freeSpaceFocus)
         ActionRow(stringResource(R.string.save_report), ActionVariant.SECONDARY, onReport)
-        if (ready.toSwitchOff.isNotEmpty()) {
-            Small(stringResource(R.string.what_goes, ready.toSwitchOff.joinToString(", ") { it.label }), maxLines = 2)
+        if (toUninstall.isNotEmpty()) {
+            Small(stringResource(R.string.will_uninstall, toUninstall.joinToString(", ") { it.label }), color = Amber)
+        }
+        val toDisable = ready.toSwitchOff - toUninstall.toSet()
+        if (toDisable.isNotEmpty()) {
+            Small(stringResource(R.string.what_goes, toDisable.joinToString(", ") { it.label }), maxLines = 1)
         }
     }
 }
 
 @Composable
-private fun ColumnScope.ReadyHero(ready: TvState.Ready) {
+private fun ColumnScope.ReadyHero(ready: TvState.Ready, isReversible: Boolean) {
     val plan = ready.plan
     if (plan.model == null) {
         HeroLabel(stringResource(R.string.hero_safe_basics), color = Amber)
-        Small(stringResource(R.string.unknown_tv, ready.manufacturer, ready.model))
         Small(stringResource(R.string.unknown_tv_help))
     }
     when {
         plan.disable.isNotEmpty() -> {
             HeroNumber("${plan.disable.size}")
             HeroLabel(pluralStringResource(R.plurals.hero_to_disable, plan.disable.size))
-            Small("✓ " + stringResource(R.string.reversible))
+            if (isReversible) Small("✓ " + stringResource(R.string.reversible))
         }
         plan.ask.isNotEmpty() -> {
             HeroNumber("${plan.ask.size}")
@@ -168,7 +176,9 @@ private fun ColumnScope.ReadyHero(ready: TvState.Ready) {
 @Composable
 private fun Asking(deviceName: String, plan: DebloatPlan, userApps: Set<String>, onApply: (Set<String>) -> Unit) {
     var keep by remember { mutableStateOf(plan.ask.map { it.pkg }.toSet()) }
-    val switchingOff = plan.disable.size + plan.ask.count { it.pkg !in keep }
+    val going = plan.disable + plan.ask.map { it.pkg }.filter { it !in keep }
+    val uninstalling = going.count { it in userApps }
+    val switchingOff = going.size - uninstalling
     RespiroScaffold(
         deviceName,
         hero = {
@@ -190,7 +200,10 @@ private fun Asking(deviceName: String, plan: DebloatPlan, userApps: Set<String>,
                 }
             }
         }
-        ActionRow(stringResource(R.string.continue_count, switchingOff), ActionVariant.PRIMARY, { onApply(keep) })
+        val continueText = if (uninstalling == 0) stringResource(R.string.continue_count, switchingOff)
+        else stringResource(R.string.continue_count_uninstall, switchingOff, uninstalling)
+        val continueVariant = if (uninstalling == 0) ActionVariant.PRIMARY else ActionVariant.PERMANENT
+        ActionRow(continueText, continueVariant, { onApply(keep) })
     }
 }
 

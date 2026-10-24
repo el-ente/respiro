@@ -5,17 +5,8 @@
     <string name="connecting_help">If Android asks to allow debugging, choose Always allow.</string>
     <string name="failed_title">Respiro can\'t reach this TV\'s debugging</string>
     <string name="failed_help">Turn on Developer options › USB debugging (and Network debugging if your TV has it), then open Respiro again. If it still fails, restart the TV.</string>
-    <string name="known_tv">This is a %1$s</string>
     <string name="unknown_tv">Respiro doesn\'t know this TV yet (%1$s %2$s)</string>
     <string name="unknown_tv_help">Only what\'s safe on any Android TV will be switched off.</string>
-    <plurals name="to_disable">
-        <item quantity="one">%1$d thing to switch off</item>
-        <item quantity="other">%1$d things to switch off</item>
-    </plurals>
-    <plurals name="to_ask">
-        <item quantity="one">%1$d app to ask you about</item>
-        <item quantity="other">%1$d apps to ask you about</item>
-    </plurals>
     <string name="retry">Try again</string>
     <string name="start">Switch them off</string>
     <string name="see_switched_off">See what\'s off (%1$d)</string>
@@ -23,13 +14,6 @@
     <string name="ask_title">Which of these do you use?</string>
     <string name="ask_help">Leave on what you use. Respiro switches off the rest along with the list.</string>
     <string name="switch_off_now">Continue</string>
-    <string name="applying">Switching off… %1$d of %2$d</string>
-    <plurals name="switched_off">
-        <item quantity="one">%1$d thing switched off</item>
-        <item quantity="other">%1$d things switched off</item>
-    </plurals>
-    <string name="turn_debugging_off">Done. Turn USB and network debugging off again in Settings › Developer options: left on, other devices on your Wi-Fi could control this TV.</string>
-    <string name="undo_title">Switched off by Respiro</string>
     <string name="turn_back_on">Turn back on</string>
     <string name="turn_all_back_on">Turn everything back on</string>
     <string name="nothing_switched_off">Nothing switched off.</string>
@@ -49,23 +33,15 @@
     <string name="report_saved_help">Send it with a file manager or a send-files app, and attach it to a new issue at github.com/el-ente/respiro: someone can add this TV to Respiro.</string>
     <string name="reversible">nothing is deleted and everything can be undone</string>
     <string name="already_clean">This TV is already clean.</string>
-    <string name="i_use_it">I use it: leave it on</string>
-    <string name="i_dont_use_it">I don\'t use it: switch it off</string>
     <string name="last_step">Last step: turn debugging off</string>
     <string name="debug_step_1">Open Settings › Device Preferences › Developer options.</string>
     <string name="debug_step_2">Turn off USB debugging, and Network debugging if your TV has it.</string>
     <string name="debug_step_3">Respiro will ask to allow debugging again next time; that\'s normal.</string>
     <string name="uninstall_apps">Your apps (%1$d)</string>
     <string name="will_uninstall">Will be uninstalled · %1$s</string>
-    <string name="i_dont_use_it_uninstall">I don\'t use it: uninstall it</string>
     <plurals name="apps_uninstalled">
         <item quantity="one">%1$d app you installed was uninstalled</item>
         <item quantity="other">%1$d apps you installed were uninstalled</item>
-    </plurals>
-    <string name="installed_title">Your apps</string>
-    <plurals name="installed_summary">
-        <item quantity="one">%1$d app · %2$s. Pick it to uninstall it.</item>
-        <item quantity="other">%1$d apps · %2$s in total. Pick one to uninstall.</item>
     </plurals>
     <string name="installed_empty">No apps installed by you. Nothing to uninstall.</string>
     <string name="uninstalled_result">%1$s uninstalled · %2$s freed</string>
@@ -107,4 +83,5 @@
     <string name="chip_uninstall">Uninstall</string>
     <string name="continue_count">Continue · switch off %1$d</string>
     <string name="dont_turn_off">Don\'t turn off the TV.</string>
+    <string name="continue_count_uninstall">Continue · switch off %1$d · uninstall %2$d</string>
 </resources>
