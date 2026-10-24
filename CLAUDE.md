@@ -42,6 +42,8 @@ These come from debloating real TVs. Breaking one can leave a TV that doesn't bo
    (Gradle rejects newer JDKs; `local.properties` is gitignored, copy it from the main checkout).
 4. Commit, push the branch, and open the PR with `gh pr create` against `main`.
 5. Keep README.md in sync with behaviour in the same change.
+6. Always commit: commit and push right after every finished change, however small. Never leave finished work
+   uncommitted.
 
 ## Testing on a TV
 
