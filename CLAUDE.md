@@ -15,6 +15,8 @@ These come from debloating real TVs. Breaking one can leave a TV that doesn't bo
   may remove the app's updates (`pm uninstall-system-updates`, the factory version stays) and clear its data
   (`pm clear`), then confirm it is still off. Turning it back on gives the factory version. Never for a kept,
   protected or user-installed app, and never before the disable succeeded.
+- **Clearing caches is allowed for every app** (`pm trim-caches`, Free up space): it only drops `cache`/`code_cache`
+  folders that apps rebuild, never app data, downloads or settings.
 - **Back up first.** Save the package list, the disabled list and the relevant settings before the first change.
 - **Never disable Android's core packages:** the permission controller, package installer, ext services/shared,
   module metadata (`com.android.*` and `com.google.android.*`), `com.google.android.overlay.modules*`,
