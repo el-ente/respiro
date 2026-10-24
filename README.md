@@ -13,6 +13,7 @@ preinstalled (telemetry, ads, promo rows, duplicate services) and switches it of
   off on each one, which must stay, and which quirks the firmware has.
 - **Switches off what came with the TV.** Every change is `pm disable-user --user 0`, and Respiro keeps a record, so
   any of it can be undone from the app.
+- **Frees up space any time.** Clears every app's cache (apps keep their data) and shows how much it freed.
 - **Uninstalls apps you installed, when you choose.** Biggest first, one at a time with a confirmation, or the ones
   you said you don't use. These can't be undone from Respiro; the Play Store has them.
 - **Gives the space back.** Once a preinstalled app is off, Respiro removes its updates and clears its data; the

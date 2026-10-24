@@ -12,6 +12,16 @@ object Storage {
 
     fun freeKb(shell: Shell): Long? = parseFreeKb(shell.run("dumpsys diskstats"))
 
+    /**
+     * Asks Android to clear every app's cache: `pm trim-caches` with a target larger than the disk frees all it can.
+     * Caches are rebuilt by apps as needed; no data or settings are lost.
+     */
+    fun clearCaches(shell: Shell) {
+        shell.run("pm trim-caches $TRIM_EVERYTHING")
+    }
+
+    private const val TRIM_EVERYTHING = "999G"
+
     fun parseFreeKb(dump: String): Long? = dataFree.find(dump)?.groupValues?.get(1)?.toLongOrNull()
 
     /** Bytes each app takes, its code plus its data (cache included), from the same dump. */
