@@ -11,8 +11,10 @@ preinstalled (telemetry, ads, promo rows, duplicate services) and switches it of
   network ADB on the same device) to get the permissions an ordinary app doesn't have.
 - **Knows the device.** A database of tested TV models, built into the app, says which packages are safe to switch
   off on each one, which must stay, and which quirks the firmware has.
-- **Disables, never uninstalls.** Every change is `pm disable-user --user 0`, and Respiro keeps a record, so any of
-  it can be undone from the app.
+- **Switches off what came with the TV.** Every change is `pm disable-user --user 0`, and Respiro keeps a record, so
+  any of it can be undone from the app.
+- **Uninstalls apps you installed, when you choose.** Biggest first, one at a time with a confirmation, or the ones
+  you said you don't use. These can't be undone from Respiro; the Play Store has them.
 - **Gives the space back.** Once a preinstalled app is off, Respiro removes its updates and clears its data; the
   factory version stays, so turning it back on works (the Play Store updates it again). Apps you installed keep
   their data.

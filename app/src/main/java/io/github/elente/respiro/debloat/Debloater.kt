@@ -9,6 +9,9 @@ sealed interface Outcome {
 
     data class Disabled(override val pkg: String) : Outcome
 
+    /** An app the user installed: removed, not switched off. Not in the undo list; the Play Store has it. */
+    data class Uninstalled(override val pkg: String) : Outcome
+
     data class Skipped(override val pkg: String, val reason: SkipReason) : Outcome
 }
 
@@ -24,20 +27,29 @@ enum class SkipReason {
 }
 
 /**
- * Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
+ * Preinstalled apps are switched off; apps the user installed are uninstalled (`pm uninstall`), since there is no
+ * factory copy to fall back to and nothing to keep them for. Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
  * batch, recording every change so it can be undone. Once a preinstalled app is off, it gives back the space it took:
  * removes its updates (the factory version stays) and clears its data. It never uninstalls an app, and never touches
  * the data of an app the user installed.
  */
-class Debloater(private val shell: Shell, private val log: ChangeLog) {
+class Debloater(private val shell: Shell, private val log: ChangeLog, private val uninstaller: Uninstaller? = null) {
 
-    fun disable(packages: List<String>, onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): List<Outcome> {
+    /**
+     * [userApps] are the packages the user saw named "will be uninstalled": only those are uninstalled, and only if
+     * [uninstaller] still finds them removable. Everything else is switched off, whatever the TV's lists say.
+     */
+    fun disable(
+        packages: List<String>,
+        userApps: Set<String> = emptySet(),
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+    ): List<Outcome> {
         val wifiOwners = wifiOwners()
         val preinstalled = TvPackages.parse(shell.run("pm list packages -s"))
         val outcomes = mutableListOf<Outcome>()
         packages.chunked(BATCH_SIZE).forEach { batch ->
             val batchOutcomes = batch.mapIndexed { index, pkg ->
-                disableOne(pkg, wifiOwners, preinstalled).also { onProgress(outcomes.size + index + 1, packages.size) }
+                disableOne(pkg, wifiOwners, preinstalled, userApps).also { onProgress(outcomes.size + index + 1, packages.size) }
             }
             outcomes += confirm(batchOutcomes)
         }
@@ -52,9 +64,10 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         return enabled
     }
 
-    private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>): Outcome {
+    private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>, userApps: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
+        if (pkg in userApps) return uninstall(pkg)
         // Recorded before any command: if the connection drops after pm ran, undo still knows about it.
         log.add(pkg)
         if (!switchOff(pkg)) {
@@ -68,6 +81,9 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         }
         return Outcome.Disabled(pkg)
     }
+
+    private fun uninstall(pkg: String): Outcome =
+        if (uninstaller?.uninstall(pkg) == true) Outcome.Uninstalled(pkg) else Outcome.Skipped(pkg, SkipReason.REFUSED)
 
     private fun switchOff(pkg: String): Boolean =
         shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")

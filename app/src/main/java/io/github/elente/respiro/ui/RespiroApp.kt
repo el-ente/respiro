@@ -1,6 +1,11 @@
 package io.github.elente.respiro.ui
 
+import android.text.format.Formatter
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -32,6 +37,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
+import io.github.elente.respiro.InstalledApp
 import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
 import io.github.elente.respiro.TvState
@@ -49,6 +55,9 @@ private val Warning = Color(0xFFF2B84B)
 @Composable
 fun RespiroApp(vm: MainViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
+    // Back steps out of the uninstall screens and lists; on the plan it leaves Respiro as usual.
+    BackHandler(enabled = state is TvState.ConfirmUninstall) { vm.cancelUninstall() }
+    BackHandler(enabled = state is TvState.Installed || state is TvState.Undo || state is TvState.ReportSaved) { vm.inspect() }
     MaterialTheme(colorScheme = darkColorScheme()) {
         Column(
             modifier = Modifier
@@ -63,12 +72,15 @@ fun RespiroApp(vm: MainViewModel) {
                 is TvState.Failed -> Failed(current, onRetry = vm::inspect)
                 is TvState.Ready -> Ready(
                     current,
-                    onStart = { vm.ask(current.plan) },
+                    onStart = { vm.ask(current.plan, current.userApps) },
                     onUndo = vm::openUndo,
+                    onUninstall = vm::openInstalled,
                     onReport = { vm.saveReport(current.props) },
                 )
+                is TvState.Installed -> Installed(current, onPick = vm::askUninstall)
+                is TvState.ConfirmUninstall -> ConfirmUninstall(current.app, onUninstall = vm::uninstall, onCancel = vm::cancelUninstall)
                 is TvState.ReportSaved -> ReportSaved(current.path, onBack = vm::inspect)
-                is TvState.Asking -> Asking(current.plan, onApply = { keep -> vm.apply(current.plan, keep) })
+                is TvState.Asking -> Asking(current.plan, current.userApps, onApply = { keep -> vm.apply(current.plan, keep, current.userApps) })
                 is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
                 TvState.Working -> Body(stringResource(R.string.working))
                 is TvState.Done -> Done(current, onUndo = vm::openUndo)
@@ -93,7 +105,7 @@ private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit, onReport: () -> Unit) {
+private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit, onUninstall: () -> Unit, onReport: () -> Unit) {
     val plan = ready.plan
     val model = plan.model
     if (model != null) {
@@ -113,6 +125,8 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
             plan.ask.isNotEmpty() -> FocusedButton(stringResource(R.string.switch_off_now), onStart)
         }
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
+        // Never the default focus: uninstalling can't be undone.
+        if (ready.removable > 0) Button(onClick = onUninstall) { Text(stringResource(R.string.uninstall_apps, ready.removable)) }
         Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
     }
     if (plan.disable.isEmpty() && plan.ask.isEmpty()) Body(stringResource(R.string.already_clean))
@@ -122,10 +136,66 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
                 selected = false,
                 onClick = {},
                 headlineContent = { Text(named.label) },
-                supportingContent = { Text(named.reason ?: named.pkg) },
+                supportingContent = {
+                    val reason = named.reason ?: named.pkg
+                    Text(if (named.pkg in ready.userApps) stringResource(R.string.will_uninstall, reason) else reason)
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+/** Apps the user installed, biggest first: OK on one asks to confirm its uninstall. */
+@Composable
+private fun Installed(installed: TvState.Installed, onPick: (InstalledApp) -> Unit) {
+    val context = LocalContext.current
+    val total = installed.apps.sumOf { it.bytes }
+    Heading(stringResource(R.string.installed_title))
+    installed.result?.let { result ->
+        if (result.removed) {
+            Text(
+                stringResource(R.string.uninstalled_result, result.label, Formatter.formatShortFileSize(context, result.bytes)) +
+                    "  ·  " + stringResource(R.string.uninstalled_total, Formatter.formatShortFileSize(context, result.totalBytes)),
+                color = Success,
+                fontSize = 18.sp,
+            )
+        } else {
+            Text(stringResource(R.string.uninstall_failed, result.label), color = Warning, fontSize = 18.sp)
+        }
+    }
+    if (installed.apps.isEmpty()) {
+        Body(stringResource(R.string.installed_empty))
+        return
+    }
+    Body(pluralStringResource(R.plurals.installed_summary, installed.apps.size, installed.apps.size, Formatter.formatShortFileSize(context, total)))
+    val firstRow = remember { FocusRequester() }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        items(installed.apps, key = { it.named.pkg }) { app ->
+            ListItem(
+                selected = false,
+                onClick = { onPick(app) },
+                headlineContent = { Text(app.named.label) },
+                leadingContent = { app.icon?.let { Image(it, contentDescription = null, modifier = Modifier.size(40.dp)) } },
+                trailingContent = { Text(Formatter.formatShortFileSize(context, app.bytes)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (app == installed.apps.first()) Modifier.focusRequester(firstRow) else Modifier),
+            )
+        }
+    }
+    LaunchedEffect(installed) { runCatching { firstRow.requestFocus() } }
+}
+
+/** Cancel comes first and takes focus, so pressing OK twice by mistake removes nothing. */
+@Composable
+private fun ConfirmUninstall(app: InstalledApp, onUninstall: (InstalledApp) -> Unit, onCancel: () -> Unit) {
+    val context = LocalContext.current
+    Heading(stringResource(R.string.uninstall_confirm_title, app.named.label))
+    Body(stringResource(R.string.uninstall_confirm_body, Formatter.formatShortFileSize(context, app.bytes)))
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        FocusedButton(stringResource(R.string.cancel), onCancel)
+        Button(onClick = { onUninstall(app) }) { Text(stringResource(R.string.uninstall), color = Warning) }
     }
 }
 
@@ -138,7 +208,7 @@ private fun ReportSaved(path: String, onBack: () -> Unit) {
 
 /** One switch per app Respiro asks about; on means "I use it, leave it". */
 @Composable
-private fun ColumnScope.Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
+private fun ColumnScope.Asking(plan: DebloatPlan, userApps: Set<String>, onApply: (Set<String>) -> Unit) {
     var keep by remember { mutableStateOf(plan.ask.map { it.pkg }.toSet()) }
     Heading(stringResource(R.string.ask_title))
     Body(stringResource(R.string.ask_help))
@@ -149,7 +219,10 @@ private fun ColumnScope.Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit
                 selected = false,
                 onClick = { keep = if (used) keep - entry.pkg else keep + entry.pkg },
                 headlineContent = { Text(entry.label) },
-                supportingContent = { Text(stringResource(if (used) R.string.i_use_it else R.string.i_dont_use_it)) },
+                supportingContent = {
+                    val off = if (entry.pkg in userApps) R.string.i_dont_use_it_uninstall else R.string.i_dont_use_it
+                    Text(stringResource(if (used) R.string.i_use_it else off))
+                },
                 trailingContent = { Switch(checked = used, onCheckedChange = null) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -166,6 +239,9 @@ private fun Done(done: TvState.Done, onUndo: () -> Unit) {
         fontSize = 32.sp,
         fontWeight = FontWeight.SemiBold,
     )
+    if (done.uninstalled > 0) {
+        Text(pluralStringResource(R.plurals.apps_uninstalled, done.uninstalled, done.uninstalled), color = Success, fontSize = 22.sp)
+    }
     done.freedMb?.let { Text(stringResource(R.string.space_freed, it), color = Success, fontSize = 22.sp) }
     Text(stringResource(R.string.last_step), color = Warning, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
     listOf(R.string.debug_step_1, R.string.debug_step_2, R.string.debug_step_3).forEachIndexed { index, step ->

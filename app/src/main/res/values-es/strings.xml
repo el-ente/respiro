@@ -53,4 +53,24 @@
     <string name="debug_step_1">Abre Ajustes › Preferencias del dispositivo › Opciones para desarrolladores.</string>
     <string name="debug_step_2">Desactiva Depuración por USB, y Depuración por red si tu televisor la tiene.</string>
     <string name="debug_step_3">La próxima vez Respiro volverá a pedir permiso de depuración; es normal.</string>
+    <string name="uninstall_apps">Desinstalar apps (%1$d)</string>
+    <string name="will_uninstall">Se desinstala · %1$s</string>
+    <string name="i_dont_use_it_uninstall">No la uso: desinstalarla</string>
+    <plurals name="apps_uninstalled">
+        <item quantity="one">Se desinstaló %1$d app que instalaste</item>
+        <item quantity="other">Se desinstalaron %1$d apps que instalaste</item>
+    </plurals>
+    <string name="installed_title">Apps que instalaste</string>
+    <plurals name="installed_summary">
+        <item quantity="one">%1$d app · ocupa %2$s. Elígela para desinstalarla.</item>
+        <item quantity="other">%1$d apps · ocupan %2$s. Elige una para desinstalarla.</item>
+    </plurals>
+    <string name="installed_empty">No hay apps instaladas por ti. Nada para desinstalar.</string>
+    <string name="uninstalled_result">%1$s desinstalada · se liberaron %2$s</string>
+    <string name="uninstalled_total">liberaste %1$s en total</string>
+    <string name="uninstall_failed">No se pudo desinstalar %1$s.</string>
+    <string name="uninstall_confirm_title">¿Desinstalar %1$s?</string>
+    <string name="uninstall_confirm_body">Se borran la app y sus datos (%1$s). Puedes volver a instalarla desde Play Store, pero tendrás que iniciar sesión otra vez.</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="cancel">Cancelar</string>
 </resources>
