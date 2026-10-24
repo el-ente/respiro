@@ -35,7 +35,13 @@ sealed interface TvState {
     data class Failed(val problem: ConnectionProblem, val detail: String) : TvState
 
     /** The plan for this TV, already narrowed to what is installed and still on. A null model means an unknown TV. */
-    data class Ready(val props: Map<String, String>, val plan: DebloatPlan, val switchedOff: Int) : TvState {
+    /** [toSwitchOff] names each package of the plan's disable list, in the same order. */
+    data class Ready(
+        val props: Map<String, String>,
+        val plan: DebloatPlan,
+        val toSwitchOff: List<NamedPackage>,
+        val switchedOff: Int,
+    ) : TvState {
         val manufacturer: String get() = props[Getprop.MANUFACTURER].orEmpty()
         val model: String get() = props[Getprop.MODEL].orEmpty()
     }
@@ -76,7 +82,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun inspect() = onTv(TvState.Connecting) { shell ->
         val props = Getprop.parse(shell.run("getprop"))
         val plan = database.plan(database.match(props)).forTv(TvPackages.read(shell))
-        TvState.Ready(props, plan, log.all().size)
+        TvState.Ready(props, plan, plan.disable.map { names.describe(it.pkg) }, log.all().size)
     }
 
     fun ask(plan: DebloatPlan) {

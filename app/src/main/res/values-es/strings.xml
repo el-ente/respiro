@@ -14,10 +14,6 @@
         <item quantity="one">%1$d app sobre la que te vamos a preguntar</item>
         <item quantity="other">%1$d apps sobre las que te vamos a preguntar</item>
     </plurals>
-    <string name="group_telemetry">Rastreo</string>
-    <string name="group_ads">Publicidad y promociones</string>
-    <string name="group_services">Servicios en segundo plano</string>
-    <string name="group_preloaded">Apps preinstaladas</string>
     <string name="retry">Reintentar</string>
     <string name="start">Apagarlas</string>
     <string name="see_switched_off">Ver lo apagado (%1$d)</string>
@@ -49,4 +45,12 @@
     <string name="save_report">Guardar informe del televisor</string>
     <string name="report_saved_title">Informe guardado</string>
     <string name="report_saved_help">Está en %1$s. Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
+    <string name="reversible">no se borra nada y todo se puede deshacer</string>
+    <string name="already_clean">Este televisor ya está liviano.</string>
+    <string name="i_use_it">La uso: dejarla encendida</string>
+    <string name="i_dont_use_it">No la uso: apagarla</string>
+    <string name="last_step">Último paso: apaga la depuración</string>
+    <string name="debug_step_1">Abre Ajustes › Preferencias del dispositivo › Opciones para desarrolladores.</string>
+    <string name="debug_step_2">Desactiva Depuración por USB, y Depuración por red si tu televisor la tiene.</string>
+    <string name="debug_step_3">La próxima vez Respiro volverá a pedir permiso de depuración; es normal.</string>
 </resources>

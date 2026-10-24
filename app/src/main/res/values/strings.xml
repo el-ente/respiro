@@ -15,10 +15,6 @@
         <item quantity="one">%1$d app to ask you about</item>
         <item quantity="other">%1$d apps to ask you about</item>
     </plurals>
-    <string name="group_telemetry">Tracking</string>
-    <string name="group_ads">Ads and promos</string>
-    <string name="group_services">Background services</string>
-    <string name="group_preloaded">Preinstalled apps</string>
     <string name="retry">Try again</string>
     <string name="start">Switch them off</string>
     <string name="see_switched_off">See what\'s off (%1$d)</string>
@@ -50,4 +46,12 @@
     <string name="save_report">Save device report</string>
     <string name="report_saved_title">Device report saved</string>
     <string name="report_saved_help">It\'s in %1$s. Send it with a file manager or a send-files app, and attach it to a new issue at github.com/el-ente/respiro: someone can add this TV to Respiro.</string>
+    <string name="reversible">nothing is deleted and everything can be undone</string>
+    <string name="already_clean">This TV is already clean.</string>
+    <string name="i_use_it">I use it: leave it on</string>
+    <string name="i_dont_use_it">I don\'t use it: switch it off</string>
+    <string name="last_step">Last step: turn debugging off</string>
+    <string name="debug_step_1">Open Settings › Device Preferences › Developer options.</string>
+    <string name="debug_step_2">Turn off USB debugging, and Network debugging if your TV has it.</string>
+    <string name="debug_step_3">Respiro will ask to allow debugging again next time; that\'s normal.</string>
 </resources>

@@ -3,6 +3,7 @@ package io.github.elente.respiro.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +43,8 @@ import io.github.elente.respiro.debloat.SkipReason
 private val Background = Color(0xFF0B0F14)
 private val TextColor = Color(0xFFF2F4F7)
 private val Muted = Color(0xFF9AA4B2)
+private val Success = Color(0xFF7FD1AE)
+private val Warning = Color(0xFFF2B84B)
 
 @Composable
 fun RespiroApp(vm: MainViewModel) {
@@ -99,9 +102,11 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
         Heading(stringResource(R.string.unknown_tv, ready.manufacturer, ready.model))
         Body(stringResource(R.string.unknown_tv_help))
     }
-    Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size))
-    groupCounts(plan).forEach { (group, count) -> Body("  ·  $group: $count") }
-    Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
+    if (plan.disable.isNotEmpty()) {
+        Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size) + "  ·  " + stringResource(R.string.reversible))
+    }
+    if (plan.ask.isNotEmpty()) Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
+    // Buttons above the list, so a long list can never push them off screen.
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         when {
             plan.disable.isNotEmpty() -> FocusedButton(stringResource(R.string.start), onStart)
@@ -109,6 +114,18 @@ private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit,
         }
         if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
         Button(onClick = onReport) { Text(stringResource(R.string.save_report)) }
+    }
+    if (plan.disable.isEmpty() && plan.ask.isEmpty()) Body(stringResource(R.string.already_clean))
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        items(ready.toSwitchOff, key = { it.pkg }) { named ->
+            ListItem(
+                selected = false,
+                onClick = {},
+                headlineContent = { Text(named.label) },
+                supportingContent = { Text(named.reason ?: named.pkg) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -121,30 +138,39 @@ private fun ReportSaved(path: String, onBack: () -> Unit) {
 
 /** One switch per app Respiro asks about; on means "I use it, leave it". */
 @Composable
-private fun Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
+private fun ColumnScope.Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
     var keep by remember { mutableStateOf(plan.ask.map { it.pkg }.toSet()) }
     Heading(stringResource(R.string.ask_title))
     Body(stringResource(R.string.ask_help))
-    FocusedButton(stringResource(R.string.switch_off_now)) { onApply(keep) }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyColumn(modifier = Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         items(plan.ask, key = { it.pkg }) { entry ->
             val used = entry.pkg in keep
             ListItem(
                 selected = false,
                 onClick = { keep = if (used) keep - entry.pkg else keep + entry.pkg },
                 headlineContent = { Text(entry.label) },
+                supportingContent = { Text(stringResource(if (used) R.string.i_use_it else R.string.i_dont_use_it)) },
                 trailingContent = { Switch(checked = used, onCheckedChange = null) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
+    FocusedButton(stringResource(R.string.switch_off_now)) { onApply(keep) }
 }
 
 @Composable
 private fun Done(done: TvState.Done, onUndo: () -> Unit) {
-    Heading(pluralStringResource(R.plurals.switched_off, done.switchedOff, done.switchedOff))
-    done.freedMb?.let { Body(stringResource(R.string.space_freed, it)) }
-    Body(stringResource(R.string.turn_debugging_off))
+    Text(
+        pluralStringResource(R.plurals.switched_off, done.switchedOff, done.switchedOff),
+        color = Success,
+        fontSize = 32.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    done.freedMb?.let { Text(stringResource(R.string.space_freed, it), color = Success, fontSize = 22.sp) }
+    Text(stringResource(R.string.last_step), color = Warning, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+    listOf(R.string.debug_step_1, R.string.debug_step_2, R.string.debug_step_3).forEachIndexed { index, step ->
+        Body("${index + 1}.  ${stringResource(step)}")
+    }
     FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
     // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
     LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -183,17 +209,6 @@ private fun skipReason(reason: SkipReason): String = stringResource(
         SkipReason.REFUSED -> R.string.skip_refused
     },
 )
-
-@Composable
-private fun groupCounts(plan: DebloatPlan): List<Pair<String, Int>> {
-    val labels = mapOf(
-        "telemetry" to stringResource(R.string.group_telemetry),
-        "ads" to stringResource(R.string.group_ads),
-        "services" to stringResource(R.string.group_services),
-        "preloaded" to stringResource(R.string.group_preloaded),
-    )
-    return plan.disable.groupingBy { it.group }.eachCount().map { (group, count) -> (labels[group] ?: group) to count }
-}
 
 /** A button that takes focus when its screen opens, so the remote always lands somewhere. */
 @Composable
