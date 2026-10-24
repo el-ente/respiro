@@ -46,4 +46,7 @@
     <string name="failed_debugging_off">La depuración está apagada. Ve a Ajustes › Preferencias del dispositivo › Información, pulsa OK siete veces sobre Compilación y en Opciones para desarrolladores activa Depuración por USB (y Depuración por red si tu televisor la tiene). Luego reintenta.</string>
     <string name="failed_not_allowed">Android no autorizó a Respiro a tiempo. Reintenta y elige Permitir siempre cuando te pregunte. Si no aparece ninguna pregunta, reinicia el televisor: una pregunta que quedó pendiente puede ocultar las nuevas.</string>
     <string name="failed_during_work">La conexión con el televisor se cortó mientras Respiro trabajaba. Lo que apagó hasta ahora está en Ver lo apagado; abre Respiro otra vez para terminar.</string>
+    <string name="save_report">Guardar informe del televisor</string>
+    <string name="report_saved_title">Informe guardado</string>
+    <string name="report_saved_help">Está en %1$s. Envíalo con un gestor de archivos o una app para enviar archivos y adjúntalo a un issue nuevo en github.com/el-ente/respiro: alguien puede sumar este televisor a Respiro.</string>
 </resources>

@@ -18,6 +18,8 @@ import io.github.elente.respiro.debloat.SkipReason
 import io.github.elente.respiro.debloat.Storage
 import io.github.elente.respiro.debloat.TvPackages
 import io.github.elente.respiro.debloat.forTv
+import io.github.elente.respiro.report.DeviceReport
+import io.github.elente.respiro.report.ReportFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +35,13 @@ sealed interface TvState {
     data class Failed(val problem: ConnectionProblem, val detail: String) : TvState
 
     /** The plan for this TV, already narrowed to what is installed and still on. A null model means an unknown TV. */
-    data class Ready(val manufacturer: String, val model: String, val plan: DebloatPlan, val switchedOff: Int) : TvState
+    data class Ready(val props: Map<String, String>, val plan: DebloatPlan, val switchedOff: Int) : TvState {
+        val manufacturer: String get() = props[Getprop.MANUFACTURER].orEmpty()
+        val model: String get() = props[Getprop.MODEL].orEmpty()
+    }
+
+    /** The device report was saved to [path] on the TV. */
+    data class ReportSaved(val path: String) : TvState
 
     data class Asking(val plan: DebloatPlan) : TvState
 
@@ -68,7 +76,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun inspect() = onTv(TvState.Connecting) { shell ->
         val props = Getprop.parse(shell.run("getprop"))
         val plan = database.plan(database.match(props)).forTv(TvPackages.read(shell))
-        TvState.Ready(props[MANUFACTURER].orEmpty(), props[MODEL].orEmpty(), plan, log.all().size)
+        TvState.Ready(props, plan, log.all().size)
     }
 
     fun ask(plan: DebloatPlan) {
@@ -90,7 +98,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Off the main thread: one PackageManager lookup per app could stutter a 1 GB TV. */
+    /** Saves what a contributor needs to add this TV to the database, to Download/ on the TV. */
+    fun saveReport(props: Map<String, String>) = onTv(TvState.Working) { shell ->
+        val report = DeviceReport.build(
+            props = props,
+            preinstalled = TvPackages.parse(shell.run("pm list packages -s")),
+            disabled = TvPackages.parse(shell.run("pm list packages -d")),
+            switchedOff = log.all(),
+        )
+        val path = DeviceReport.path(props)
+        ReportFile.write(shell, path, report)
+        TvState.ReportSaved(path)
+    }
+
     fun openUndo() {
         viewModelScope.launch(Dispatchers.IO) { _state.value = undoList() }
     }
@@ -116,8 +136,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private companion object {
-        const val MANUFACTURER = "ro.product.manufacturer"
-        const val MODEL = "ro.product.model"
         const val KB_PER_MB = 1024
     }
 }
