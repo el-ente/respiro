@@ -19,4 +19,27 @@
     <string name="group_ads">Ads and promos</string>
     <string name="group_services">Background services</string>
     <string name="group_preloaded">Preinstalled apps</string>
+    <string name="retry">Try again</string>
+    <string name="start">Switch them off</string>
+    <string name="see_switched_off">See what\'s off (%1$d)</string>
+    <string name="see_switched_off_all">See what Respiro switched off</string>
+    <string name="ask_title">Which of these do you use?</string>
+    <string name="ask_help">Leave on what you use. Respiro switches off the rest along with the list.</string>
+    <string name="switch_off_now">Continue</string>
+    <string name="applying">Switching off… %1$d of %2$d</string>
+    <plurals name="switched_off">
+        <item quantity="one">%1$d thing switched off</item>
+        <item quantity="other">%1$d things switched off</item>
+    </plurals>
+    <string name="turn_debugging_off">Done. Turn USB and network debugging off again in Settings › Developer options: left on, other devices on your Wi-Fi could control this TV.</string>
+    <string name="undo_title">Switched off by Respiro</string>
+    <string name="turn_back_on">Turn back on</string>
+    <string name="turn_all_back_on">Turn everything back on</string>
+    <string name="nothing_switched_off">Nothing switched off.</string>
+    <string name="back">Back</string>
+    <string name="skip_protected">left alone: Android needs it</string>
+    <string name="skip_owns_wifi">left alone: it owns your saved Wi-Fi network</string>
+    <string name="skip_refused">Android didn\'t allow it</string>
+    <string name="working">Turning back on…</string>
+    <string name="debugging_reminder">When you\'re done with Respiro, turn USB and network debugging off again in Settings › Developer options.</string>
 </resources>

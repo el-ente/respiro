@@ -18,4 +18,27 @@
     <string name="group_ads">Publicidad y promociones</string>
     <string name="group_services">Servicios en segundo plano</string>
     <string name="group_preloaded">Apps preinstaladas</string>
+    <string name="retry">Reintentar</string>
+    <string name="start">Apagarlas</string>
+    <string name="see_switched_off">Ver lo apagado (%1$d)</string>
+    <string name="see_switched_off_all">Ver lo que apagó Respiro</string>
+    <string name="ask_title">¿Cuáles de estas usas?</string>
+    <string name="ask_help">Deja encendido lo que usas. Respiro apaga el resto junto con la lista.</string>
+    <string name="switch_off_now">Continuar</string>
+    <string name="applying">Apagando… %1$d de %2$d</string>
+    <plurals name="switched_off">
+        <item quantity="one">%1$d cosa apagada</item>
+        <item quantity="other">%1$d cosas apagadas</item>
+    </plurals>
+    <string name="turn_debugging_off">Listo. Vuelve a desactivar la depuración por USB y por red en Ajustes › Opciones para desarrolladores: si queda activa, otros dispositivos de tu Wi-Fi podrían controlar este televisor.</string>
+    <string name="undo_title">Apagado por Respiro</string>
+    <string name="turn_back_on">Volver a encender</string>
+    <string name="turn_all_back_on">Volver a encender todo</string>
+    <string name="nothing_switched_off">No hay nada apagado.</string>
+    <string name="back">Volver</string>
+    <string name="skip_protected">sin tocar: Android lo necesita</string>
+    <string name="skip_owns_wifi">sin tocar: es dueño de tu red Wi-Fi guardada</string>
+    <string name="skip_refused">Android no lo permitió</string>
+    <string name="working">Volviendo a encender…</string>
+    <string name="debugging_reminder">Cuando termines con Respiro, vuelve a desactivar la depuración por USB y por red en Ajustes › Opciones para desarrolladores.</string>
 </resources>

@@ -3,11 +3,21 @@ package io.github.elente.respiro.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -15,13 +25,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Button
+import androidx.tv.material3.ListItem
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
 import io.github.elente.respiro.MainViewModel
 import io.github.elente.respiro.R
 import io.github.elente.respiro.TvState
 import io.github.elente.respiro.data.DebloatPlan
+import io.github.elente.respiro.debloat.Outcome
+import io.github.elente.respiro.debloat.SkipReason
 
 private val Background = Color(0xFF0B0F14)
 private val TextColor = Color(0xFFF2F4F7)
@@ -41,19 +56,29 @@ fun RespiroApp(vm: MainViewModel) {
             Text(stringResource(R.string.app_name), color = TextColor, fontSize = 34.sp, fontWeight = FontWeight.Light)
             when (val current = state) {
                 TvState.Connecting -> Body(stringResource(R.string.connecting))
-                is TvState.Failed -> {
-                    Heading(stringResource(R.string.failed_title))
-                    Body(stringResource(R.string.failed_help))
-                    Body(current.reason)
-                }
-                is TvState.Ready -> Plan(current)
+                is TvState.Failed -> Failed(current, onRetry = vm::inspect)
+                is TvState.Ready -> Ready(current, onStart = { vm.ask(current.plan) }, onUndo = vm::openUndo)
+                is TvState.Asking -> Asking(current.plan, onApply = { keep -> vm.apply(current.plan, keep) })
+                is TvState.Applying -> Body(stringResource(R.string.applying, current.done, current.total))
+                TvState.Working -> Body(stringResource(R.string.working))
+                is TvState.Done -> Done(current.outcomes, onUndo = vm::openUndo)
+                is TvState.Undo -> Undo(current.packages, onTurnBackOn = vm::turnBackOn, onBack = vm::inspect)
             }
         }
     }
 }
 
 @Composable
-private fun Plan(ready: TvState.Ready) {
+private fun Failed(failed: TvState.Failed, onRetry: () -> Unit) {
+    Heading(stringResource(R.string.failed_title))
+    Body(stringResource(R.string.failed_help))
+    Body(failed.reason)
+    FocusedButton(stringResource(R.string.retry), onRetry)
+    Body(stringResource(R.string.debugging_reminder))
+}
+
+@Composable
+private fun Ready(ready: TvState.Ready, onStart: () -> Unit, onUndo: () -> Unit) {
     val plan = ready.plan
     val model = plan.model
     if (model != null) {
@@ -65,7 +90,74 @@ private fun Plan(ready: TvState.Ready) {
     Body(pluralStringResource(R.plurals.to_disable, plan.disable.size, plan.disable.size))
     groupCounts(plan).forEach { (group, count) -> Body("  ·  $group: $count") }
     Body(pluralStringResource(R.plurals.to_ask, plan.ask.size, plan.ask.size))
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (plan.disable.isNotEmpty() || plan.ask.isNotEmpty()) FocusedButton(stringResource(R.string.start), onStart)
+        if (ready.switchedOff > 0) Button(onClick = onUndo) { Text(stringResource(R.string.see_switched_off, ready.switchedOff)) }
+    }
 }
+
+/** One switch per app Respiro asks about; on means "I use it, leave it". */
+@Composable
+private fun Asking(plan: DebloatPlan, onApply: (Set<String>) -> Unit) {
+    var keep by remember { mutableStateOf(plan.ask.map { it.pkg }.toSet()) }
+    Heading(stringResource(R.string.ask_title))
+    Body(stringResource(R.string.ask_help))
+    FocusedButton(stringResource(R.string.switch_off_now)) { onApply(keep) }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(plan.ask, key = { it.pkg }) { entry ->
+            val used = entry.pkg in keep
+            ListItem(
+                selected = false,
+                onClick = { keep = if (used) keep - entry.pkg else keep + entry.pkg },
+                headlineContent = { Text(entry.label) },
+                trailingContent = { Switch(checked = used, onCheckedChange = null) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun Done(outcomes: List<Outcome>, onUndo: () -> Unit) {
+    val disabled = outcomes.count { it is Outcome.Disabled }
+    Heading(pluralStringResource(R.plurals.switched_off, disabled, disabled))
+    Body(stringResource(R.string.turn_debugging_off))
+    FocusedButton(stringResource(R.string.see_switched_off_all), onUndo)
+    // Skipped packages last and scrolling, so a long list can't push the reminder or the button off screen.
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(outcomes.filterIsInstance<Outcome.Skipped>(), key = { it.pkg }) { Body("  ·  ${it.pkg}: ${skipReason(it.reason)}") }
+    }
+}
+
+@Composable
+private fun Undo(packages: List<String>, onTurnBackOn: (List<String>) -> Unit, onBack: () -> Unit) {
+    Heading(stringResource(R.string.undo_title))
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        FocusedButton(stringResource(R.string.back), onBack)
+        if (packages.isNotEmpty()) Button(onClick = { onTurnBackOn(packages) }) { Text(stringResource(R.string.turn_all_back_on)) }
+    }
+    if (packages.isEmpty()) Body(stringResource(R.string.nothing_switched_off))
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(packages, key = { it }) { pkg ->
+            ListItem(
+                selected = false,
+                onClick = { onTurnBackOn(listOf(pkg)) },
+                headlineContent = { Text(pkg) },
+                trailingContent = { Text(stringResource(R.string.turn_back_on)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun skipReason(reason: SkipReason): String = stringResource(
+    when (reason) {
+        SkipReason.PROTECTED -> R.string.skip_protected
+        SkipReason.OWNS_WIFI -> R.string.skip_owns_wifi
+        SkipReason.REFUSED -> R.string.skip_refused
+    },
+)
 
 @Composable
 private fun groupCounts(plan: DebloatPlan): List<Pair<String, Int>> {
@@ -76,6 +168,14 @@ private fun groupCounts(plan: DebloatPlan): List<Pair<String, Int>> {
         "preloaded" to stringResource(R.string.group_preloaded),
     )
     return plan.disable.groupingBy { it.group }.eachCount().map { (group, count) -> (labels[group] ?: group) to count }
+}
+
+/** A button that takes focus when its screen opens, so the remote always lands somewhere. */
+@Composable
+private fun FocusedButton(text: String, onClick: () -> Unit) {
+    val focus = remember { FocusRequester() }
+    Button(onClick = onClick, modifier = Modifier.focusRequester(focus)) { Text(text) }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
 
 @Composable
