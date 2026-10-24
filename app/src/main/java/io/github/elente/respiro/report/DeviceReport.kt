@@ -1,5 +1,7 @@
 package io.github.elente.respiro.report
 
+import kotlinx.serialization.json.JsonPrimitive
+
 /**
  * What a contributor needs to add an unknown TV to the database: a model file to edit, plus the TV's preinstalled
  * and disabled packages. Only the properties below go in; serial numbers, apps the user installed, Wi-Fi names and
@@ -22,7 +24,7 @@ object DeviceReport {
     )
 
     /** Download/respiro-<device>.txt, with the device name reduced to safe characters. */
-    fun path(props: Map<String, String>) = "/sdcard/Download/respiro-${slug(props["ro.product.device"] ?: "tv")}.txt"
+    fun path(props: Map<String, String>) = "/sdcard/Download/respiro-${slug(props["ro.product.device"].orEmpty())}.txt"
 
     fun build(props: Map<String, String>, preinstalled: Set<String>, disabled: Set<String>, switchedOff: List<String>): String {
         val manufacturer = props["ro.product.manufacturer"].orEmpty()
@@ -46,17 +48,17 @@ object DeviceReport {
         val manufacturer = props["ro.product.manufacturer"].orEmpty()
         val device = props["ro.product.device"].orEmpty()
         val match = listOf("ro.product.manufacturer", "ro.product.device", "ro.product.name")
-            .mapNotNull { key -> props[key]?.let { "    \"$key\": \"$it\"" } }
+            .mapNotNull { key -> props[key]?.let { "    \"$key\": ${json(it)}" } }
             .joinToString(",\n")
         val disable = switchedOff.joinToString(",\n") { "    { \"package\": \"$it\", \"group\": \"TODO\", \"reason\": \"TODO\" }" }
         return """
             |{
             |  "id": "${slug(manufacturer)}/${slug(device)}",
-            |  "name": "${props["ro.product.brand"].orEmpty()} ${props["ro.product.model"].orEmpty()}",
+            |  "name": ${json("${props["ro.product.brand"].orEmpty()} ${props["ro.product.model"].orEmpty()}")},
             |  "match": {
             |$match
             |  },
-            |  "firmware": { "android": "${props["ro.build.version.release"].orEmpty()}", "sdk": ${props["ro.build.version.sdk"] ?: 0}, "build": "${props["ro.build.display.id"].orEmpty()}" },
+            |  "firmware": { "android": ${json(props["ro.build.version.release"].orEmpty())}, "sdk": ${props["ro.build.version.sdk"]?.toIntOrNull() ?: 0}, "build": ${json(props["ro.build.display.id"].orEmpty())} },
             |  "extends": ["common/google-tv"],
             |  "disable": [
             |$disable
@@ -66,5 +68,8 @@ object DeviceReport {
         """.trimMargin()
     }
 
-    private fun slug(text: String) = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+    /** A property value as a JSON string, quotes and backslashes escaped. */
+    private fun json(value: String) = JsonPrimitive(value).toString()
+
+    private fun slug(text: String) = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifEmpty { "tv" }
 }

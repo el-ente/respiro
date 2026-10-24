@@ -98,7 +98,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Off the main thread: one PackageManager lookup per app could stutter a 1 GB TV. */
     /** Saves what a contributor needs to add this TV to the database, to Download/ on the TV. */
     fun saveReport(props: Map<String, String>) = onTv(TvState.Working) { shell ->
         val report = DeviceReport.build(

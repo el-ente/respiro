@@ -30,6 +30,21 @@ class DeviceReportTest {
     }
 
     @Test
+    fun `quotes in properties keep the draft valid JSON, and empty names fall back to tv`() {
+        val odd = props + mapOf("ro.product.model" to "Say \"hi\"", "ro.product.device" to "", "ro.build.version.sdk" to "x")
+        val draft = DeviceReport.build(odd, emptySet(), emptySet(), emptyList())
+            .substringAfter(".json)\n").substringBefore("\n\n## Properties")
+        kotlinx.serialization.json.Json.parseToJsonElement(draft)
+        assertTrue("\"id\": \"acme/tv\"" in draft)
+        assertEquals("/sdcard/Download/respiro-tv.txt", DeviceReport.path(odd))
+    }
+
+    @Test(expected = java.io.IOException::class)
+    fun `a failed write is reported`() {
+        ReportFile.write(Shell { "" }, "/sdcard/Download/r.txt", "text")
+    }
+
+    @Test
     fun `never includes anything that identifies one person's TV`() {
         val report = DeviceReport.build(props, emptySet(), emptySet(), emptyList())
         assertFalse("SECRET123" in report)
@@ -40,9 +55,10 @@ class DeviceReportTest {
     fun `writes the file in base64 pieces that decode to the text`() {
         val commands = mutableListOf<String>()
         val text = "x".repeat(5000)
-        ReportFile.write(Shell { commands += it; "" }, "/sdcard/Download/r.txt", text)
+        ReportFile.write(Shell { commands += it; "ok" }, "/sdcard/Download/r.txt", text)
         assertEquals("rm -f '/sdcard/Download/r.txt'", commands.first())
         val pieces = commands.drop(1).map { it.substringAfter("echo '").substringBefore("'") }
+        assertTrue(commands.drop(1).all { it.endsWith("&& echo ok") })
         assertTrue(pieces.size > 1)
         assertEquals(text, String(Base64.getDecoder().decode(pieces.joinToString(""))))
     }
