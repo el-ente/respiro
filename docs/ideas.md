@@ -26,6 +26,11 @@ Not planned yet. Move an idea to specs.md when it's decided.
 - **Firmware re-enables packages at boot**: show them as "comes back on restart" instead of failing.
 - **Before/after numbers**: free RAM, boot time, number of background processes.
 
+## Apps
+
+- **App uninstaller**: list the apps the user installed themselves (not preinstalled), with size and last used,
+  and remove the ones they pick. Preinstalled packages stay disable-only, as the safety rules require.
+
 ## Experience
 
 - **Explain each package** in plain words, with "what you lose if you switch it off".
