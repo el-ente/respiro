@@ -27,6 +27,7 @@ class FakeTv(
                 disabled += pkg
                 "Package $pkg new state: disabled-user"
             }
+            command.startsWith("pm uninstall-system-updates ") || command.startsWith("pm clear --user 0 ") -> "Success"
             command.startsWith("pm enable --user 0 ") && pkg in installed -> {
                 disabled -= pkg
                 "Package $pkg new state: enabled"

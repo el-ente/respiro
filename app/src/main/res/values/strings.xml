@@ -42,4 +42,6 @@
     <string name="skip_refused">Android didn\'t allow it</string>
     <string name="working">Turning back on…</string>
     <string name="debugging_reminder">When you\'re done with Respiro, turn USB and network debugging off again in Settings › Developer options.</string>
+    <string name="space_freed">%1$d MB of storage freed.</string>
+    <string name="undo_help">An app turned back on returns as it came from the factory; the Play Store updates it again.</string>
 </resources>

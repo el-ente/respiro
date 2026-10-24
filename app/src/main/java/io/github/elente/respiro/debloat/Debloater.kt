@@ -25,7 +25,8 @@ enum class SkipReason {
 
 /**
  * Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
- * batch, recording every change so it can be undone. Never uninstalls.
+ * batch, recording every change so it can be undone. To give back the space they took, it first removes the app's
+ * updates (the factory version stays) and clears its data. It never uninstalls an app.
  */
 class Debloater(private val shell: Shell, private val log: ChangeLog) {
 
@@ -52,13 +53,23 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
     private fun disableOne(pkg: String, wifiOwners: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
-        // Recorded before the command: if the connection drops after pm ran, undo still knows about it.
+        // Recorded before any command: if the connection drops after pm ran, undo still knows about it.
         log.add(pkg)
+        recoverSpace(pkg)
         if (!shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")) {
             log.remove(pkg)
             return Outcome.Skipped(pkg, SkipReason.REFUSED)
         }
         return Outcome.Disabled(pkg)
+    }
+
+    /**
+     * Drops the app's updates, falling back to the factory version, and its data. Done before disabling so the disabled
+     * state is the last thing set. Failures are fine: an app without updates or data just has nothing to give back.
+     */
+    private fun recoverSpace(pkg: String) {
+        shell.run("pm uninstall-system-updates $pkg")
+        shell.run("pm clear --user 0 $pkg")
     }
 
     /**

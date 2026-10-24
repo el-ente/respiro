@@ -13,6 +13,8 @@ preinstalled (telemetry, ads, promo rows, duplicate services) and switches it of
   off on each one, which must stay, and which quirks the firmware has.
 - **Disables, never uninstalls.** Every change is `pm disable-user --user 0`, and Respiro keeps a record, so any of
   it can be undone from the app.
+- **Gives the space back.** Before switching an app off, Respiro removes its updates and clears its data; the factory
+  version stays, so turning it back on works (the Play Store updates it again).
 - **Asks about what you use.** Streaming apps, the voice assistant, Chromecast and firmware updates are your call.
   Respiro asks before touching them.
 

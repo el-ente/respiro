@@ -25,11 +25,22 @@ class DebloaterTest {
     }
 
     @Test
+    fun `removes updates and data before disabling, so the disabled state is set last`() {
+        val tv = FakeTv(installed = setOf("com.tcl.a"))
+        Debloater(tv, log()).disable(listOf("com.tcl.a"))
+        val sequence = tv.commands.filter { it.endsWith(" com.tcl.a") }
+        assertEquals(
+            listOf("pm uninstall-system-updates com.tcl.a", "pm clear --user 0 com.tcl.a", "pm disable-user --user 0 com.tcl.a"),
+            sequence,
+        )
+    }
+
+    @Test
     fun `never touches a protected package or a malformed name`() {
         val tv = FakeTv(installed = setOf("com.android.systemui"))
         val outcomes = Debloater(tv, log()).disable(listOf("com.android.systemui", "x;reboot"))
         assertTrue(outcomes.all { it is Outcome.Skipped && it.reason == SkipReason.PROTECTED })
-        assertTrue(tv.commands.none { it.startsWith("pm disable-user") })
+        assertTrue(tv.commands.none { it.startsWith("pm disable-user") || it.startsWith("pm clear") || it.startsWith("pm uninstall") })
     }
 
     @Test
