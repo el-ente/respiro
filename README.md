@@ -40,4 +40,12 @@ your Wi-Fi control the TV.
 
 ## Status
 
-Nothing is built yet. This repository holds the plan.
+Early. The app connects to its own TV's ADB on `localhost:5555` and reads what a debloat needs (tested on the TCL
+43" C06_2K_GB, Android 11): after the user accepts "Allow USB debugging?", it runs commands as the `shell` user.
+
+Known so far:
+
+- The TV must have network ADB on port 5555. Google TV sets that only offer Wireless debugging need pairing first;
+  not supported yet.
+- If an earlier authorization prompt is still pending (even one that never showed), Android skips new ones until
+  the TV restarts. Restart the TV and open Respiro again.
