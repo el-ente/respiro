@@ -49,6 +49,11 @@ class DeviceDatabase(files: List<DeviceFile>) {
         )
     }
 
+    /** Why any file switches this package off, or the label it asks about it under; null when no file names it. */
+    fun reasonFor(pkg: String): String? = byId.values.firstNotNullOfOrNull { file ->
+        file.disable.firstOrNull { it.pkg == pkg }?.reason ?: file.ask.firstOrNull { it.pkg == pkg }?.label
+    }
+
     /** The files a model extends, in order, then the model itself. */
     fun layersOf(model: DeviceFile): List<DeviceFile> = model.extends.mapNotNull { byId[it] } + model
 

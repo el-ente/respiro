@@ -6,6 +6,8 @@
 
     <!-- The TV's own ADB is a TCP socket on localhost. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- To show app names for any package on the TV, disabled ones included. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
         android:label="@string/app_name"
