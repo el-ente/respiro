@@ -49,6 +49,14 @@ These come from debloating real TVs. Breaking one can leave a TV that doesn't bo
 6. Always commit: commit and push right after every finished change, however small. Never leave finished work
    uncommitted.
 
+## Releases
+
+- Push a tag `vX.Y.Z` on `main`: CI tests, builds with the private release key and publishes the release with
+  `respiro.apk`, which the README's install link points to. Bump `versionCode` and `versionName` first.
+- The release key lives only in repository secrets (`RESPIRO_KEYSTORE_BASE64`, `RESPIRO_KEYSTORE_PASSWORD`,
+  `RESPIRO_KEY_ALIAS`, `RESPIRO_KEY_PASSWORD`) and an offline backup. Never commit it: Respiro holds an ADB key the
+  TV trusts, and whoever can sign an update inherits it. `app/dev.keystore` is public and signs test builds only.
+
 ## Testing on a TV
 
 - Use a release build: debug builds of a Compose app start several times slower on a 1 GB TV.

@@ -1,0 +1,70 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test and build (dev-signed, for testing only)
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: respiro-apk-dev-signed
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with the release key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RESPIRO_KEYSTORE_BASE64 }}
+          RESPIRO_KEYSTORE_PASSWORD: ${{ secrets.RESPIRO_KEYSTORE_PASSWORD }}
+          RESPIRO_KEY_ALIAS: ${{ secrets.RESPIRO_KEY_ALIAS }}
+          RESPIRO_KEY_PASSWORD: ${{ secrets.RESPIRO_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "RESPIRO_KEYSTORE_BASE64 secret is missing" >&2; exit 1; }
+          export RESPIRO_KEYSTORE="$RUNNER_TEMP/release.keystore"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RESPIRO_KEYSTORE"
+          ./gradlew --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk respiro.apk
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" respiro.apk --generate-notes
