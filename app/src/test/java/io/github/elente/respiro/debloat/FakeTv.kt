@@ -9,6 +9,7 @@ class FakeTv(
     private val wifiDump: String = "Wi-Fi is enabled",
     private val refuses: Set<String> = emptySet(),
     private val failedChecks: Int = 0,
+    private val preinstalled: Set<String> = installed,
 ) : Shell {
     private val installed = installed.toMutableSet()
     val disabled = disabled.toMutableSet()
@@ -20,6 +21,7 @@ class FakeTv(
         val pkg = command.substringAfterLast(' ')
         return when {
             command == "pm list packages" -> installed.joinToString("\n") { "package:$it" }
+            command == "pm list packages -s" -> preinstalled.joinToString("\n") { "package:$it" }
             command == "pm list packages -d" && checksToFail > 0 -> "".also { checksToFail-- }
             command == "pm list packages -d" -> disabled.joinToString("\n") { "package:$it" }
             command == "dumpsys wifi" -> wifiDump

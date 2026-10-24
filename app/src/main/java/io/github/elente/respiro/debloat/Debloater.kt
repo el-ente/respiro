@@ -25,17 +25,19 @@ enum class SkipReason {
 
 /**
  * Switches packages off with `pm disable-user`, one command each, in small batches checked against the TV after each
- * batch, recording every change so it can be undone. To give back the space they took, it first removes the app's
- * updates (the factory version stays) and clears its data. It never uninstalls an app.
+ * batch, recording every change so it can be undone. Once a preinstalled app is off, it gives back the space it took:
+ * removes its updates (the factory version stays) and clears its data. It never uninstalls an app, and never touches
+ * the data of an app the user installed.
  */
 class Debloater(private val shell: Shell, private val log: ChangeLog) {
 
     fun disable(packages: List<String>, onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): List<Outcome> {
         val wifiOwners = wifiOwners()
+        val preinstalled = TvPackages.parse(shell.run("pm list packages -s"))
         val outcomes = mutableListOf<Outcome>()
         packages.chunked(BATCH_SIZE).forEach { batch ->
             val batchOutcomes = batch.mapIndexed { index, pkg ->
-                disableOne(pkg, wifiOwners).also { onProgress(outcomes.size + index + 1, packages.size) }
+                disableOne(pkg, wifiOwners, preinstalled).also { onProgress(outcomes.size + index + 1, packages.size) }
             }
             outcomes += confirm(batchOutcomes)
         }
@@ -50,22 +52,29 @@ class Debloater(private val shell: Shell, private val log: ChangeLog) {
         return enabled
     }
 
-    private fun disableOne(pkg: String, wifiOwners: Set<String>): Outcome {
+    private fun disableOne(pkg: String, wifiOwners: Set<String>, preinstalled: Set<String>): Outcome {
         if (ProtectedPackages.isProtected(pkg)) return Outcome.Skipped(pkg, SkipReason.PROTECTED)
         if (pkg in wifiOwners) return Outcome.Skipped(pkg, SkipReason.OWNS_WIFI)
         // Recorded before any command: if the connection drops after pm ran, undo still knows about it.
         log.add(pkg)
-        recoverSpace(pkg)
-        if (!shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")) {
+        if (!switchOff(pkg)) {
             log.remove(pkg)
             return Outcome.Skipped(pkg, SkipReason.REFUSED)
+        }
+        if (pkg in preinstalled) {
+            recoverSpace(pkg)
+            // Dropping updates swaps the app back to its factory copy; make sure it is still off.
+            if (pkg !in TvPackages.parse(shell.run("pm list packages -d"))) switchOff(pkg)
         }
         return Outcome.Disabled(pkg)
     }
 
+    private fun switchOff(pkg: String): Boolean =
+        shell.run("pm disable-user --user 0 $pkg").contains("new state: disabled-user")
+
     /**
-     * Drops the app's updates, falling back to the factory version, and its data. Done before disabling so the disabled
-     * state is the last thing set. Failures are fine: an app without updates or data just has nothing to give back.
+     * Drops a preinstalled app's updates, falling back to the factory version, and its data. Only after it is off, so an
+     * app Android won't disable keeps everything. Failures are fine: no updates or no data means nothing to give back.
      */
     private fun recoverSpace(pkg: String) {
         shell.run("pm uninstall-system-updates $pkg")
